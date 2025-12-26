@@ -17,6 +17,7 @@ spring:
 
   logging:
     level:
+      org.flywaydb: DEBUG
       org.hibernate.SQL: debug
       org.hibernate.type.descriptor.sql.BasicBinder: trace
 
