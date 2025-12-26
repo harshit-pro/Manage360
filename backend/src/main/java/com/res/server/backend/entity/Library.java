@@ -20,4 +20,23 @@ public class Library {
     private String address;
     private String city;
     private Integer totalSeats;
+
+    @Column(name = "reg_prefix")
+    private String regPrefix;
+
+    @Column(name = "next_reg_seq")
+    private Integer nextRegSeq = 1;
 }
+
+// set code  when library is created
+//Library library = new Library();
+//library.setName(request.getName());
+//        library.setAddress(request.getAddress());
+//        library.setCity(request.getCity());
+//        library.setTotalSeats(request.getTotalSeats());
+//
+//        library.setRegPrefix(PrefixUtil.generate(request.getName()));
+//        library.setNextRegSeq(1);
+//
+//libraryRepository.save(library);
+//

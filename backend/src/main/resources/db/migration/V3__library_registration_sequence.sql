@@ -1,0 +1,3 @@
+ALTER TABLE libraries
+    ADD COLUMN IF NOT EXISTS reg_prefix VARCHAR(10),
+    ADD COLUMN IF NOT EXISTS next_reg_seq INT DEFAULT 1;
