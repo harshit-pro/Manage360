@@ -13,7 +13,7 @@ public class SeasonalFeePaymentRequest {
     @NotNull
     private UUID studentId;
     @Min(1)
-    private int amount;]
+    private int amount;
     @NotNull
     private PaymentMethod method;
     private String note;
