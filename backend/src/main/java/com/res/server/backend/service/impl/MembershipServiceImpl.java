@@ -1,6 +1,7 @@
 package com.res.server.backend.service.impl;
 
 
+import com.res.server.backend.dto.response.MembershipRenewResponse;
 import com.res.server.backend.entity.Membership;
 import com.res.server.backend.entity.Payment;
 import com.res.server.backend.entity.Student;
@@ -30,7 +31,7 @@ public class MembershipServiceImpl implements MembershipService {
     private final PaymentRepository paymentRepository;
 
     @Override
-    public Membership renew(UUID studentId, int months, int amount, String method, String note) {
+    public MembershipRenewResponse renew(UUID studentId, int months, int amount, String method, String note) {
         UUID libraryId = LibraryContext.getLibraryId();
 
         Student student = studentRepository.findByIdAndLibrary_Id(studentId, libraryId)
@@ -60,6 +61,8 @@ public class MembershipServiceImpl implements MembershipService {
         payment.setNote(note);
 
         paymentRepository.save(payment);
-        return membershipRepository.save(membership);
+        membershipRepository.save(membership);
+
+        return new MembershipRenewResponse(payment.getId(), newActiveUntil, MembershipStatus.ACTIVE);
     }
 }
