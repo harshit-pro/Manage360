@@ -19,7 +19,6 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
-
     @PostMapping("/seasonal")
     @PreAuthorize("hasAnyRole('OWNER','STAFF')")
     public Map<String, UUID> paySeasonal(@Valid @RequestBody SeasonalFeePaymentRequest req) {

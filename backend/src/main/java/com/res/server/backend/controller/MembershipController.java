@@ -21,7 +21,6 @@ public class MembershipController {
 
     private final MembershipService membershipService;
     private final MembershipRepository membershipRepository;
-
     @PostMapping("/{studentId}/renew")
     @PreAuthorize("hasAnyRole('OWNER','STAFF')")
     public MembershipRenewResponse renew(

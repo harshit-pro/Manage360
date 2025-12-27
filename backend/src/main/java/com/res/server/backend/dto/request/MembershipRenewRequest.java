@@ -10,12 +10,9 @@ import lombok.Setter;
 public class MembershipRenewRequest {
     @Min(1) // Minimum months should be 1
     private int months;
-
     @Min(1) // Minimum amount should be 1
     private int amount;
-
     @NotNull
     private PaymentMethod method;
-
     private String note;
 }

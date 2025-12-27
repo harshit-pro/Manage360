@@ -26,11 +26,11 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public UUID paySeasonalFee(UUID studentId, int amount, PaymentMethod method, String note, String referenceId) {
         UUID libraryId = LibraryContext.getLibraryId();
-
         Student student = studentRepository.findByIdAndLibrary_Id(studentId, libraryId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
 
         student.setFeesDeposited(student.getFeesDeposited() + amount);
+
 
         Payment payment = new Payment();
         payment.setLibrary(student.getLibrary());

@@ -11,5 +11,6 @@ import java.util.UUID;
 public class MembershipRenewResponse {
     private UUID paymentId;
     private LocalDate activeUntil;
+
     private MembershipStatus status;
 }

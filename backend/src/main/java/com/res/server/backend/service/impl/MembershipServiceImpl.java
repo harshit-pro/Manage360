@@ -62,7 +62,6 @@ public class MembershipServiceImpl implements MembershipService {
 
         paymentRepository.save(payment);
         membershipRepository.save(membership);
-
         return new MembershipRenewResponse(payment.getId(), newActiveUntil, MembershipStatus.ACTIVE);
     }
 }
