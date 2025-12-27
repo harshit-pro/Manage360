@@ -25,6 +25,9 @@ public class Student extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @OneToOne(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Membership membership;
+
     @ManyToOne(fetch = FetchType.LAZY) // many students can belong to one library
     @JoinColumn(name = "library_id")
     private Library library; // foreign key to library
