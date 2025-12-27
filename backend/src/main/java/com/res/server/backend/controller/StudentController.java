@@ -1,4 +1,4 @@
-package com.res.server.backend;
+package com.res.server.backend.controller;
 
 
 import com.res.server.backend.dto.mapper.StudentMapper;

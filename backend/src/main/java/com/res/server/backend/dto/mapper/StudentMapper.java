@@ -16,6 +16,5 @@ public interface StudentMapper {
     @Mapping(target = "membership", ignore = true)
     Student toEntity(StudentCreateRequest request);
 
-    @Mapping(source = "membership", target = "membership")
     StudentResponse toResponse(Student student);
 }

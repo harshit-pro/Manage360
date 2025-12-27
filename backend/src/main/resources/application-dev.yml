@@ -21,6 +21,10 @@ spring:
       org.hibernate.SQL: debug
       org.hibernate.type.descriptor.sql.BasicBinder: trace
 
+#security:
+#  jwt:
+#    secret: ${JWT_SECRET:dev-secret-please-change}
+#    expiration-minutes: 60 # 1 hour
 
 
 #  •	ddl-auto: validate → Flyway owns schema
