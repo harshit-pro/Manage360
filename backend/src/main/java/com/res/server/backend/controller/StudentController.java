@@ -24,6 +24,7 @@ public class StudentController {
 
     @PostMapping
     public StudentResponse create(@Valid @RequestBody StudentCreateRequest request) {
+        System.out.println("Creating student with request: " + request);
         Student student = studentMapper.toEntity(request);
         return studentMapper.toResponse(studentService.create(student));
     }

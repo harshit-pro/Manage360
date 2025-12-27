@@ -31,7 +31,7 @@ public class MembershipServiceImpl implements MembershipService {
     private final PaymentRepository paymentRepository;
 
     @Override
-    public MembershipRenewResponse renew(UUID studentId, int months, int amount, String method, String note) {
+    public MembershipRenewResponse renew(UUID studentId, int months, int amount, PaymentMethod method, String note) {
         UUID libraryId = LibraryContext.getLibraryId();
 
         Student student = studentRepository.findByIdAndLibrary_Id(studentId, libraryId)
@@ -49,14 +49,14 @@ public class MembershipServiceImpl implements MembershipService {
 
         membership.setActiveUntil(newActiveUntil);
         membership.setStatus(MembershipStatus.ACTIVE);
-        membership.setLastPaymentMethod(PaymentMethod.valueOf(method));
+        membership.setLastPaymentMethod(method);
 
         Payment payment = new Payment();
         payment.setLibrary(student.getLibrary());
         payment.setStudent(student);
         payment.setType(PaymentType.MEMBERSHIP_RENEWAL);
         payment.setAmount(amount);
-        payment.setMethod(PaymentMethod.valueOf(method));
+        payment.setMethod(method);
         payment.setPaidAt(Instant.now());
         payment.setNote(note);
 

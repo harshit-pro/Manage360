@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,12 +31,16 @@ public class Alert {
     private Student student;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "alert_type")
     private AlertType type;
 
     private LocalDate scheduledFor;
     private Instant sentAt;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "alert_channel")
     private AlertChannel channel;
 
     @Column(columnDefinition = "jsonb")

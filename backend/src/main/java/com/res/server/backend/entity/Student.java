@@ -4,6 +4,8 @@ import com.res.server.backend.entity.enums.GENDER;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -42,7 +44,10 @@ public class Student extends BaseEntity {
     private String guardianName;
     private String guardianMobile;
 
+
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "gender_enum")
     private GENDER gender;
 
     private String address;
