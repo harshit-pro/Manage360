@@ -11,5 +11,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailAndEnabledTrue(String email);
 
     Collection<Object> findByEmail(String mail);
+    boolean existsByEmail(String email);
 }
 //This will be used by Spring Security later

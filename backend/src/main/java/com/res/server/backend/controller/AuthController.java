@@ -1,10 +1,13 @@
 package com.res.server.backend.controller;
 
 import com.res.server.backend.dto.request.LoginRequest;
+import com.res.server.backend.dto.request.SignupRequest;
 import com.res.server.backend.dto.response.LoginResponse;
+import com.res.server.backend.dto.response.SignupResponse;
 import com.res.server.backend.entity.User;
 import com.res.server.backend.repository.UserRepository;
 import com.res.server.backend.security.JwtUtil;
+import com.res.server.backend.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +22,7 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
@@ -38,5 +42,10 @@ public class AuthController {
                 user.getEmail()
         );
         return new LoginResponse(token);
+    }
+
+    @PostMapping("/signup")
+    public SignupResponse signup(@Valid @RequestBody SignupRequest request) {
+        return authService.signup(request);
     }
 }
