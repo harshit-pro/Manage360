@@ -26,8 +26,8 @@ public class MembershipAlertSchedulerImpl {
     private final MembershipRepository membershipRepo;
     private final AlertRepository alertRepo;
 
-//    @Scheduled(cron = "0 0 2 * * *") // daily at 2 AM
-    @Scheduled(fixedRate = 60000) // every 5 seconds (for testing)
+    @Scheduled(cron = "0 0 2 * * *") // daily at 2 AM
+//    @Scheduled(fixedRate = 60000) // every 5 seconds (for testing)
     @Transactional
     public void processMembershipAlerts() {
         log.info("🔥 MembershipAlertScheduler triggered");
