@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,9 +59,14 @@ public class DashboardServiceImpl implements DashboardService {
     public EstimatedFeesResponse estimatedFees() {
 
         UUID libraryId = LibraryContext.getLibraryId();
+        if (libraryId == null) {
+            return new EstimatedFeesResponse(0, 0, 0);
+        }
 
         Object result = studentRepo.estimatedVsCollected(libraryId);
-        Object[] row = (Object[]) result;
+        if (!(result instanceof Object[] row) || row.length < 2 || row[0] == null || row[1] == null) {
+            return new EstimatedFeesResponse(0, 0, 0);
+        }
 
         int estimated = ((Number) row[0]).intValue();
         int collected = ((Number) row[1]).intValue();
