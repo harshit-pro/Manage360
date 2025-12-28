@@ -27,4 +27,14 @@ where m.library.id = :libraryId
 and m.activeUntil <= :limit
 """)
     long countDue(UUID libraryId, LocalDate limit);
+
+    List<Membership> findAllByActiveUntilBeforeAndStatus(
+            LocalDate date,
+            MembershipStatus status
+    );
+
+    List<Membership> findAllByActiveUntilAndStatus(
+            LocalDate date,
+            MembershipStatus status
+    );
 }

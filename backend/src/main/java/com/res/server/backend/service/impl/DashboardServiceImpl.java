@@ -45,7 +45,6 @@ public class DashboardServiceImpl implements DashboardService {
 //                        r -> r[0].toString(),
 //                        r -> ((Number) r[1]).intValue()
 //                ));
-
         return new DashboardSummaryResponse(
                 totalStudents,
                 activeStudents,

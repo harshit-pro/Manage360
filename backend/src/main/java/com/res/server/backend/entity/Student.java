@@ -38,6 +38,7 @@ public class Student extends BaseEntity {
     private String regNo; // registration number of student
     private String name;
     private String aadharNo;
+    @Column(name = "seat_no", unique = true)
     private String seatNo;
     private LocalDate dateOfJoining;
     private String mobileNo;
