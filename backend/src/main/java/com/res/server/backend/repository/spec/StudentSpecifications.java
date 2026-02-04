@@ -26,14 +26,14 @@ public class StudentSpecifications {
 
             predicates.add(cb.like(cb.lower(root.get("name")), like));
             predicates.add(cb.like(cb.lower(root.get("regNo")), like));
-            predicates.add(cb.like(cb.lower(root.get("seatNo")), like));
+            predicates.add(cb.like(cb.lower(root.get("seatNo").as(String.class)), like));
             predicates.add(cb.like(cb.lower(root.get("mobileNo")), like));
-            predicates.add(cb.like(cb.lower(root.get("aadharNo")), like));
+            // aadharNo removed from search - may be stored as bytea/encrypted
 
             return cb.or(predicates.toArray(new Predicate[0]));
         };
     }
 }
 //This enables:
-//        •	Search by name / regNo / seat / mobile / aadhar
+//        •	Search by name / regNo / seat / mobile
 //	•	Clean, composable filters

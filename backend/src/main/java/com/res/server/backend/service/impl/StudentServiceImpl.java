@@ -64,11 +64,16 @@ public class StudentServiceImpl implements StudentService{
     }
 
     @Override
-    public Page<Student> search(String q, Boolean isEnrolled, Pageable pageable) {
-        return studentRepository.findAll(
-                StudentSpecifications.belongsToLibrary(LibraryContext.getLibraryId())
-                        .and(StudentSpecifications.isEnrolled(isEnrolled))
-                        .and(StudentSpecifications.search(q)),
+    public Page<Student> search(
+            UUID libraryId,
+            String q,
+            Boolean isEnrolled,
+            Pageable pageable
+    ) {
+        return studentRepository.searchByLibrary(
+                libraryId,
+                q,
+                isEnrolled,
                 pageable
         );
     }

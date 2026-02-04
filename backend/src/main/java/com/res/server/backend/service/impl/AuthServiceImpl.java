@@ -42,10 +42,10 @@ public class AuthServiceImpl implements AuthService {
         library.setAddress(request.getAddress());
         library.setCity(request.getCity());
         library.setTotalSeats(request.getTotalSeats());
-        library.setRegPrefix(PrefixUtil.generate(request.getLibraryName()));
-        library.setNextRegSeq(1);
+        library.setRegPrefix(PrefixUtil.generate(request.getLibraryName())); // generate prefix from library name eg
+        library.setNextRegSeq(1);// initialize next reg seq to 1 example LIB001
 
-        libraryRepository.save(library);
+        libraryRepository.save(library); // persist library to get generated ID for foreign key
 
         // 3. Create OWNER user
         User user = new User();
@@ -65,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
                 ),
                 user.getEmail()
         );
-
+        System.out.println("Generated token for new owner: " + token);
         return new SignupResponse(token);
     }
 }

@@ -2,9 +2,12 @@ package com.res.server.backend.repository;
 
 
 import com.res.server.backend.entity.Student;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -43,4 +46,24 @@ where s.library.id = :libraryId
 and s.isEnrolled = true
 """)
     Object estimatedVsCollected(UUID libraryId);
+
+    @Query("""
+    select s from Student s
+    where s.library.id = :libraryId
+      and (:isEnrolled is null or s.isEnrolled = :isEnrolled)
+      and (
+           :q is null or
+           lower(s.name) like lower(concat('%', :q, '%')) or
+           lower(s.regNo) like lower(concat('%', :q, '%')) or
+           lower(cast(s.seatNo as string)) like lower(concat('%', :q, '%')) or
+           lower(s.mobileNo) like lower(concat('%', :q, '%'))
+      )
+""")
+    Page<Student> searchByLibrary(
+            @Param("libraryId") UUID libraryId,
+            @Param("q") String q,
+            @Param("isEnrolled") Boolean isEnrolled,
+            Pageable pageable
+    );
+
 }

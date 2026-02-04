@@ -1,0 +1,21 @@
+
+//department and employee table
+emp-> empid,emp_name,salary,dept_id
+dept-> dept_id,dept_name,location
+fetches emp names and their respective dept name
+
+select e.emp_name,
+d.depart_name
+from Employee e
+join on
+Department d
+on e.depart_id=d.depart_id;
+
+//max salary in each depart
+
+select d.dept_name,
+max(e.salary) as max_salary
+from Employee e
+join Department d
+on e.dept_id=d.dept_id
+group by

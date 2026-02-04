@@ -6,6 +6,7 @@ import com.res.server.backend.dto.request.StudentCreateRequest;
 import com.res.server.backend.dto.response.StudentResponse;
 import com.res.server.backend.entity.Student;
 import com.res.server.backend.service.StudentService;
+import com.res.server.backend.service.context.LibraryContext;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,9 +41,12 @@ public class StudentController {
             @RequestParam(required = false) Boolean isEnrolled,
             Pageable pageable
     ) {
-        return studentService.search(q, isEnrolled, pageable)
+        UUID libraryId = LibraryContext.getLibraryId(); // 🔥 key line
+
+        return studentService.search(libraryId, q, isEnrolled, pageable)
                 .map(studentMapper::toResponse);
     }
+
 
     @PatchMapping("/{id}/enrollment")
     public StudentResponse updateEnrollment(
