@@ -14,6 +14,15 @@ export interface Student {
     seasonalFees: number;
     feesDeposited: number;
     activeUntil?: string; // ISO date
+    address?: string;
+    aadharNo?: string;
+    guardianName?: string;
+    guardianMobileNo?: string;
+    guardianMobile?: string;
+    gender?: string;
+    dateOfJoining?: string;
+    userId?: string;
+    membershipMonths?: number;
     // additional fields as needed
 }
 

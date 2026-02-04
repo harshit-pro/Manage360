@@ -66,7 +66,7 @@ const menuItems = [
     icon: FileText,
     items: [
       { title: "Monthly Summary", url: "/reports/monthly" },
-      { title: "Defaulter List", url: "/reports/defaulters" },
+      { title: "Defaulter Lists", url: "/reports/defaulters" },
     ],
   },
   {
@@ -102,7 +102,7 @@ export function AppSidebar() {
                 <p className="text-sm font-medium text-muted-foreground truncate max-w-[160px]">
                   {currentUser()?.name || "Guest Admin"}
                 </p>
-                {getLibraryName() && (
+                {getLibraryName() && currentUser()?.role === 'OWNER' && (
                   <Badge variant="outline" className="mt-1 text-xs font-normal bg-muted/50">
                     {getLibraryName()}
                   </Badge>

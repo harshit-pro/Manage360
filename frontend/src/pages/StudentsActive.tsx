@@ -18,18 +18,23 @@ export default function StudentsActive() {
 
     useEffect(() => {
         const fetch = async () => {
-            let data: Student[] = [];
-            if (q) {
-                const all = await searchStudents(q);
-                // Filter for active ones locally if backend search doesn't support state filtering with query
-                // Or we can assume search returns all matches.
-                // Ideally backend search might not filter by active.
-                // For now, let's just show search results.
-                data = all;
-            } else {
-                data = await listActiveStudents();
+            try {
+                let data: Student[] = [];
+                if (q) {
+                    const all = await searchStudents(q);
+                    // Filter for active ones locally if backend search doesn't support state filtering with query
+                    // Or we can assume search returns all matches.
+                    // Ideally backend search might not filter by active.
+                    // For now, let's just show search results.
+                    data = all;
+                } else {
+                    data = await listActiveStudents();
+                }
+                setStudents(data);
+            } catch (e) {
+                console.error("Failed to load active students", e);
+                setStudents([]);
             }
-            setStudents(data);
         };
         fetch();
     }, [q]);

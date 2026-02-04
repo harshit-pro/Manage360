@@ -20,8 +20,13 @@ export default function StudentsAll() {
 
     useEffect(() => {
         const fetch = async () => {
-            const data = q ? await searchStudents(q) : await listAllStudents();
-            setStudents(Array.isArray(data) ? data : []);
+            try {
+                const data = q ? await searchStudents(q) : await listAllStudents();
+                setStudents(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error("Failed to load students", e);
+                setStudents([]);
+            }
         };
         fetch();
     }, [q, tick]);

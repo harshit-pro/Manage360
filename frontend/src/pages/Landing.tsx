@@ -61,14 +61,6 @@ export default function Landing() {
                             M
                         </div>
                         <span>manage360</span>
-                        {(() => {
-                            const lib = getLibraryName();
-                            return lib ? (
-                                <Badge variant="secondary" className="ml-2 text-sm">
-                                    {lib}
-                                </Badge>
-                            ) : null;
-                        })()}
                     </Link>
                     <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
                         <a href="#features" className="hover:text-foreground transition-colors">Features</a>
@@ -232,7 +224,7 @@ export default function Landing() {
                         Ready to transform your library?
                     </h2>
                     <p className="mx-auto mt-6 max-w-xl text-lg text-primary-foreground/80">
-                        Join hundreds of libraries already using Chanakya Library to manage their operations.
+                        Join hundreds of libraries already using Manage360 to manage their operations.
                     </p>
                     <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                         <Button asChild size="lg" variant="secondary" className="h-12 min-w-[180px] rounded-full text-base font-semibold shadow-lg transition-transform hover:scale-105">
@@ -251,10 +243,10 @@ export default function Landing() {
                     <div className="grid gap-8 md:grid-cols-4 lg:grid-cols-5">
                         <div className="col-span-2">
                             <Link to="/" className="mb-4 flex items-center gap-2 font-bold text-xl">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                    CL
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 text-primary-foreground shadow-sm">
+                                    M
                                 </div>
-                                <span>Chanakya Library</span>
+                                <span>manage360</span>
                             </Link>
                             <p className="max-w-xs text-sm text-muted-foreground">
                                 The most advanced library management system for modern study centers and co-working spaces.
@@ -285,7 +277,7 @@ export default function Landing() {
                         </div>
                     </div>
                     <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
-                        © {new Date().getFullYear()} Chanakya Library. All rights reserved.
+                        © {new Date().getFullYear()} Manage360. All rights reserved.
                     </div>
                 </div>
             </footer>

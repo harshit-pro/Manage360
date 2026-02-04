@@ -25,9 +25,9 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Clear auth and optionally redirect – the UI can listen to auth state changes
-            clearAuth();
-            // Optionally you could trigger a custom event or use a global state manager.
+            // Log the error but do NOT auto-logout immediately to prevent loops
+            console.error("API 401 Unauthorized - Token may be invalid or expired. Check backend or re-login manually.");
+            // clearAuth(); // Disable auto-logout for now
         }
         return Promise.reject(error);
     }
