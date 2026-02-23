@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { listActiveStudents, searchStudents, Student } from "@/lib/students";
-import { seedDemoData } from "@/lib/demoData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

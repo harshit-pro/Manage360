@@ -1,5 +1,5 @@
 // src/pages/Index.tsx
-// Dashboard page – fetches data from backend and displays KPI cards.
+// Dashboard page – fetches KPI data from backend metrics API.
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -9,63 +9,37 @@ import { FeeEstimationPanel } from "@/components/FeeEstimationPanel";
 import { CalendarWidget } from "@/components/CalendarWidget";
 import { SeatMapGrid } from "@/components/SeatMapGrid";
 import { Users, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
-import { listAllStudents, listActiveStudents } from "@/lib/students";
-import { seedDemoData } from "@/lib/demoData";
-import { currentUser, getLibraryName } from '@/lib/auth';
+import {
+  fetchDashboardSummary,
+  fetchEstimatedFees,
+  type DashboardSummary,
+  type EstimatedFees,
+} from "@/lib/dashboard";
 
 const Index = () => {
-  // KPI state
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [activeStudents, setActiveStudents] = useState(0);
-  const [expiredCount, setExpiredCount] = useState(0);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalProfit, setTotalProfit] = useState(0);
-  const [estimatedFee, setEstimatedFee] = useState(0);
-  const [collectedFee, setCollectedFee] = useState(0);
-  const [pendingAmount, setPendingAmount] = useState(0);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [fees, setFees] = useState<EstimatedFees | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Ensure demo data exists (for the chart demo)
-  useEffect(() => {
-    seedDemoData();
-  }, []);
-
-  // Fetch data from backend once component mounts
+  // Fetch data from backend metrics API once component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const all = await listAllStudents();
-        const active = await listActiveStudents();
-
-        const total = Array.isArray(all) ? all.length : 0;
-        const activeCnt = Array.isArray(active) ? active.length : 0;
-        const expired = Array.isArray(all) ? all.filter((s) => s.isExpired).length : 0;
-
-        // Revenue calculation – read from localStorage demo data
-        const memberships = JSON.parse(localStorage.getItem("cl.memberships") || "[]") as Array<{
-          lastPayment?: { amount?: number };
-        }>;
-        const revenue = memberships.reduce((sum, m) => sum + (m.lastPayment?.amount || 0), 0);
-        const profit = Math.round(revenue * 0.25);
-
-        // Fee estimation based on enrolled students
-        const enrolled = Array.isArray(all) ? all.filter((s) => s.isEnrolled !== false) : [];
-        const estFee = enrolled.reduce((sum, s) => sum + (s.seasonalFees ?? 0), 0);
-        const collFee = enrolled.reduce((sum, s) => sum + (s.feesDeposited ?? 0), 0);
-        const pending = Math.max(0, estFee - collFee);
-
-        // Update state
-        setTotalStudents(total);
-        setActiveStudents(activeCnt);
-        setExpiredCount(expired);
-        setTotalRevenue(revenue);
-        setTotalProfit(profit);
-        setEstimatedFee(estFee);
-        setCollectedFee(collFee);
-        setPendingAmount(pending);
-
-      } catch (e) {
+        setError(null);
+        const [summaryData, feesData] = await Promise.all([
+          fetchDashboardSummary(),
+          fetchEstimatedFees(),
+        ]);
+        setSummary(summaryData);
+        setFees(feesData);
+      } catch (e: any) {
         console.error("Dashboard data fetch error:", e);
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          "Failed to load dashboard data. Please check your connection.";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -83,8 +57,50 @@ const Index = () => {
     );
   }
 
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <p className="text-destructive font-medium">{error}</p>
+          <button
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              Promise.all([fetchDashboardSummary(), fetchEstimatedFees()])
+                .then(([s, f]) => {
+                  setSummary(s);
+                  setFees(f);
+                })
+                .catch((e) =>
+                  setError(
+                    e?.response?.data?.message ||
+                    e?.message ||
+                    "Failed to load dashboard data."
+                  )
+                )
+                .finally(() => setLoading(false));
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
+          >
+            Retry
+          </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const totalStudents = summary?.totalStudents ?? 0;
+  const activeStudents = summary?.activeStudents ?? 0;
+  const expiredCount = summary?.expiredMemberships ?? 0;
+  const totalRevenue = summary?.totalRevenue ?? 0;
+  const pendingAmount = summary?.pendingFeesAmount ?? 0;
+  const totalSeats = summary?.totalSeats ?? 0;
+
+  const estimatedFee = fees?.estimated ?? 0;
+  const collectedFee = fees?.collected ?? 0;
+
   return (
-    
     <DashboardLayout>
       <div className="space-y-6">
         {/* Stats Cards */}
@@ -98,7 +114,7 @@ const Index = () => {
         {/* Secondary Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Expired Memberships" value={expiredCount} icon={AlertCircle} gradient="accent" />
-          <StatCard title="Total Profit (demo)" value={inr(totalProfit)} icon={TrendingUp} gradient="success" />
+          <StatCard title="Total Collections" value={inr(totalRevenue)} icon={TrendingUp} gradient="success" />
         </div>
 
         {/* Main Content Grid */}
@@ -113,7 +129,7 @@ const Index = () => {
         </div>
 
         {/* Seat Map */}
-        <SeatMapGrid />
+        <SeatMapGrid totalSeats={totalSeats} />
       </div>
     </DashboardLayout>
   );

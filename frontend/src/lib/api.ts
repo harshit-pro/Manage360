@@ -1,34 +1,47 @@
 // src/lib/api.ts
-// Centralized Axios instance for all API calls.
-
 import axios, { InternalAxiosRequestConfig } from "axios";
-import { getToken, clearAuth } from "./auth";
 
-export const api = axios.create({
+const api = axios.create({
     baseURL: "http://localhost:8080/api",
     headers: {
         "Content-Type": "application/json",
     },
 });
 
-// Request interceptor to add Authorization header if token exists
+// Attach token to requests (skip auth endpoints – they don't need it)
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const token = getToken();
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    const url = config.url || "";
+    const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/signup");
+    if (!isAuthEndpoint) {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
     }
     return config;
 });
 
-// Response interceptor to handle 401 – auto logout
+// Response interceptor – auto-redirect to login on 401 (only for protected endpoints)
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Log the error but do NOT auto-logout immediately to prevent loops
-            console.error("API 401 Unauthorized - Token may be invalid or expired. Check backend or re-login manually.");
-            // clearAuth(); // Disable auto-logout for now
+        const url = error.config?.url || "";
+        const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/signup");
+
+        if (error.response?.status === 401 && !isAuthEndpoint) {
+            console.error("401 Unauthorized – token invalid or expired");
+            // Clear stale auth data
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("userRole");
+            // Redirect to login (avoid redirect loop if already on login/signup)
+            const path = window.location.pathname;
+            if (path !== "/login" && path !== "/signup" && path !== "/") {
+                window.location.href = "/login";
+            }
         }
         return Promise.reject(error);
     }
 );
+
+export default api;
+

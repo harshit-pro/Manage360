@@ -1,7 +1,7 @@
 // src/lib/auth.ts
 // Authentication utilities using JWT stored in localStorage.
 
-import { api } from "./api";
+import api from "./api";
 
 export const TOKEN_KEY = "accessToken";
 export const ROLE_KEY = "userRole";
@@ -20,6 +20,8 @@ export function setAuth(token: string, role?: string) {
 export function clearAuth() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem('libraryName');
+    localStorage.removeItem('totalSeats');
 }
 
 /** Retrieve stored JWT token */
@@ -32,17 +34,37 @@ export function getUserRole(): string | null {
     return localStorage.getItem(ROLE_KEY);
 }
 
-/** Simple check if a token exists */
+/** Check if user is authenticated AND token is still valid */
 export function isAuthenticated(): boolean {
-    return !!getToken();
+    const token = getToken();
+    if (!token) return false;
+    // Try to check expiration from JWT payload
+    try {
+        const payload = decodeJwtPayload(token);
+        if (payload?.exp) {
+            // exp is in seconds, Date.now() is in milliseconds
+            if (payload.exp * 1000 < Date.now()) {
+                // Token has expired – clear stale auth data
+                clearAuth();
+                return false;
+            }
+        }
+    } catch {
+        // If decode fails, fall through – let the API call decide
+    }
+    // Token exists and is not detectably expired
+    return true;
 }
 
 /** Perform login against backend */
 export async function login(email: string, password: string): Promise<{ token: string; role: string }> {
     const response = await api.post("/auth/login", { email, password });
-    // Assuming backend returns { accessToken: string, role: string }
-    const { accessToken, role } = response.data;
+    const { accessToken, role, libraryName } = response.data;
     setAuth(accessToken, role);
+    // Persist library name for UI display
+    if (libraryName) {
+        localStorage.setItem('libraryName', libraryName);
+    }
     return { token: accessToken, role };
 }
 
@@ -62,15 +84,16 @@ function decodeJwtPayload(token: string): any {
 }
 
 /** Return current user info extracted from JWT (if present) */
-export function currentUser(): { name?: string; email?: string; role?: string } | null {
+export function currentUser(): { name?: string; email?: string; role?: string; libraryName?: string } | null {
     const token = getToken();
     if (!token) return null;
     const payload = decodeJwtPayload(token);
     if (!payload) return null;
     return {
-        name: payload.name,
+        name: payload.libraryName || payload.sub?.split('@')[0] || 'User',
         email: payload.sub,
         role: payload.role ?? getUserRole(),
+        libraryName: payload.libraryName || getLibraryName() || undefined,
     };
 }
 

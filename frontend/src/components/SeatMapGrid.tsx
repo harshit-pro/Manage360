@@ -16,7 +16,11 @@ interface Seat {
   };
 }
 
-export function SeatMapGrid() {
+interface SeatMapGridProps {
+  totalSeats: number;
+}
+
+export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
@@ -25,10 +29,13 @@ export function SeatMapGrid() {
     async function fetchSeats() {
       try {
         setLoading(true);
-        // 1. Get total seats from config
-        const totalSeats = parseInt(localStorage.getItem('totalSeats') || "40", 10);
 
-        // 2. Fetch active students from backend
+        if (totalSeats <= 0) {
+          setSeats([]);
+          return;
+        }
+
+        // Fetch active students from backend
         const activeStudents = await listActiveStudents();
         const studentMap = new Map<string, Student>();
 
@@ -40,7 +47,7 @@ export function SeatMapGrid() {
           });
         }
 
-        // 3. Generate grid based on live data
+        // Generate grid based on totalSeats from DB and live student data
         const newSeats: Seat[] = [];
         for (let i = 1; i <= totalSeats; i++) {
           const seatNum = `S${i.toString().padStart(3, "0")}`; // e.g., "S001"
@@ -63,13 +70,12 @@ export function SeatMapGrid() {
         setSeats(newSeats);
       } catch (error) {
         console.error("Failed to load seat map data", error);
-        // Fallback or empty state could be handled here
       } finally {
         setLoading(false);
       }
     }
     fetchSeats();
-  }, []);
+  }, [totalSeats]);
 
   if (loading) {
     return (

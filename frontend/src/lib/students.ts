@@ -1,7 +1,7 @@
 // src/lib/students.ts
 // API service for student management (real backend integration)
 
-import { api } from "./api";
+import api from "./api";
 
 export interface Student {
     id: string;
@@ -33,7 +33,8 @@ export async function listAllStudents(params?: {
     size?: number;
 }): Promise<Student[]> {
     const response = await api.get("/students", { params });
-    return response.data;
+    // Backend returns paginated response: { content: [...], totalElements, totalPages, ... }
+    return response.data.content || response.data;
 }
 
 /** Fetch active (enrolled) students */
@@ -42,8 +43,9 @@ export async function listActiveStudents(params?: {
     page?: number;
     size?: number;
 }): Promise<Student[]> {
-    const response = await api.get("/students/active", { params });
-    return response.data;
+    const response = await api.get("/students", { params: { ...params, isEnrolled: true } });
+    // Backend returns paginated response: { content: [...], totalElements, totalPages, ... }
+    return response.data.content || response.data;
 }
 
 /** Create a new student */
@@ -68,7 +70,7 @@ export async function createStudent(payload: {
 
 /** Toggle enrollment status */
 export async function toggleEnrollment(studentId: string, enroll: boolean): Promise<void> {
-    await api.patch(`/students/${studentId}/enrollment`, { enroll });
+    await api.patch(`/students/${studentId}/enrollment?isEnrolled=${enroll}`);
 }
 
 /** Renew membership for a student */

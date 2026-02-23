@@ -9,12 +9,27 @@ import { Badge } from "@/components/ui/badge";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function PendingFees() {
-  useEffect(() => { seedDemoData(); }, []);
   const [q, setQ] = useState("");
 
+  const [students, setStudents] = useState<StudentView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const all = await listAllStudents();
+        setStudents(Array.isArray(all) ? all : []);
+      } catch (e) {
+        console.error("Failed to load students", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
   const pending = useMemo(() => {
-    const all = listAllStudents();
-    const filtered = all.filter((s) => (s.isEnrolled !== false) && (s.isExpired || ((s.feesDeposited ?? 0) < (s.seasonalFees ?? 0))));
+    const filtered = students.filter((s) => (s.isEnrolled !== false) && ((s.seasonalFees ?? 0) > (s.feesDeposited ?? 0)));
     if (!q) return filtered;
     const qq = q.toLowerCase();
     return filtered.filter((s) =>
@@ -22,9 +37,9 @@ export default function PendingFees() {
       (s.regNo ?? "").toLowerCase().includes(qq) ||
       s.seatNo.toLowerCase().includes(qq)
     );
-  }, [q]);
+  }, [q, students]);
 
-  const regOf = (s: StudentView) => (s.code ? s.code.replace(/-/g, "") : s.regNo ? s.regNo.replace(/^REG-/, "CL") : "—");
+  const regOf = (s: StudentView) => (s.regNo ? s.regNo.replace(/^REG-/, "CL") : "—");
   const pendingAmount = (s: StudentView) => Math.max(0, (s.seasonalFees ?? 0) - (s.feesDeposited ?? 0));
 
   return (
@@ -49,7 +64,7 @@ export default function PendingFees() {
             <div className="md:hidden p-4">
               <div className="space-y-3">
                 {pending.map((s) => (
-                  <div key={s.userId} className="p-3 bg-white rounded-lg shadow-sm border">
+                  <div key={s.id} className="p-3 bg-white rounded-lg shadow-sm border">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="font-medium">{s.name}</div>
@@ -82,7 +97,7 @@ export default function PendingFees() {
                 </TableHeader>
                 <TableBody>
                   {pending.map((s) => (
-                    <TableRow key={s.userId}>
+                    <TableRow key={s.id}>
                       <TableCell>{s.name}</TableCell>
                       <TableCell className="font-mono text-xs">{regOf(s)}</TableCell>
                       <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>

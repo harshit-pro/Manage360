@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { login, currentUser, setAuth } from "@/lib/auth";
+import { login, currentUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail, Lock, ArrowRight, LogIn } from "lucide-react";
 
@@ -16,28 +16,15 @@ export default function Login() {
     const { state } = useLocation() as { state?: { from?: Location } };
     const { toast } = useToast();
 
-    const TEST_EMAIL = "test@example.com";
-    const TEST_PASSWORD = "test123";
-    const TEST_TOKEN = "test-token";
-    const TEST_ROLE = "OWNER";
-
     const onSubmit = async (data: FormData) => {
-        // Hard‑coded credentials for local testing
-        if (data.email === TEST_EMAIL && data.password === TEST_PASSWORD) {
-            // Directly set auth without calling backend
-            setAuth(TEST_TOKEN, TEST_ROLE);
-            const user = { name: "Test User" } as any;
-            toast({ title: `Welcome back, ${user.name.split(" ")[0]}!` });
-            nav((state?.from as any)?.pathname || "/dashboard", { replace: true });
-            return;
-        }
         try {
             const { token, role } = await login(data.email, data.password);
             const user = currentUser();
             toast({ title: `Welcome back, ${user?.name?.split(" ")[0] ?? "User"}!` });
             nav((state?.from as any)?.pathname || "/dashboard", { replace: true });
         } catch (e: any) {
-            toast({ title: "Login failed", description: e.message, variant: "destructive" });
+            const message = e?.response?.data?.message || e.message || "Something went wrong";
+            toast({ title: "Login failed", description: message, variant: "destructive" });
         }
     };
 
