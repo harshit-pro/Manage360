@@ -60,35 +60,27 @@ export default function StudentsNew() {
 
     const onSubmit = async (data: NewStudentInput) => {
         try {
-            // Create student via API
-            // Simple split for now since backend expects separation
-            const nameParts = data.name.trim().split(/\s+/);
-            const firstName = nameParts[0];
-            const lastName = nameParts.slice(1).join(" ") || ""; // Handle single name case
-
+            // Create student via API – send fields matching backend StudentCreateRequest DTO
             const student = await createStudent({
-                firstName: firstName,
-                lastName: lastName,
-                regNo: data.regNo,
+                name: data.name.trim(),
                 seatNo: data.seatNo,
                 address: data.address,
                 aadharNo: data.aadharNo,
                 dateOfJoining: (data.dateOfJoining || new Date().toISOString()).slice(0, 10),
                 mobileNo: data.mobile,
                 guardianName: data.guardianName,
-                guardianMobileNo: data.guardianMobile,
-                gender: data.gender.toUpperCase(), // Enum often UPPERCASE in backend
+                guardianMobile: data.guardianMobile,
+                gender: data.gender.toUpperCase(), // Enum: MALE, FEMALE, OTHER
                 seasonalFees: data.seasonalFees,
                 feesDeposited: data.feesDeposited,
             });
 
             // Initial membership (optional but helpful)
             if (data.membershipMonths > 0) {
-                // Use renewMembership API
                 await renewMembership(student.id, {
                     months: data.membershipMonths,
-                    amount: data.feesDeposited || 0,
-                    paymentMethod: data.paymentMethod && ["CASH", "UPI", "CARD"].includes(data.paymentMethod.toUpperCase())
+                    amount: data.feesDeposited > 0 ? data.feesDeposited : data.seasonalFees,
+                    method: data.paymentMethod && ["CASH", "UPI", "CARD"].includes(data.paymentMethod.toUpperCase())
                         ? (data.paymentMethod.toUpperCase() as "CASH" | "UPI" | "CARD")
                         : "CASH",
                     note: "Initial Enrollment"
@@ -98,7 +90,8 @@ export default function StudentsNew() {
             toast({ title: "Student added", description: `${data.name} has been registered successfully.` });
             nav("/students");
         } catch (e: any) {
-            toast({ title: "Could not add student", description: e.message || String(e), variant: "destructive" });
+            const message = e?.response?.data?.message || e.message || String(e);
+            toast({ title: "Could not add student", description: message, variant: "destructive" });
         }
     };
 
@@ -123,7 +116,7 @@ export default function StudentsNew() {
                                         <Label htmlFor="aadharNo">Aadhar No</Label>
                                         <Input id="aadharNo" placeholder="12-digit number" {...register("aadharNo")} />
                                     </div>
-                                    
+
                                     <div className="space-y-2">
                                         <Label htmlFor="gender">Gender</Label>
                                         <Select defaultValue={defaults.gender} onValueChange={(v) => setValue("gender", v as any)}>

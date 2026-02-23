@@ -60,7 +60,7 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
             student: student
               ? {
                 name: student.name,
-                mobile: student.mobile,
+                mobile: student.mobileNo,
                 joiningDate: student.activeUntil || "N/A",
                 paymentStatus: (student.feesDeposited >= student.seasonalFees) ? "paid" : "pending",
               }

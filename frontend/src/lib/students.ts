@@ -8,7 +8,7 @@ export interface Student {
     regNo: string;
     name: string;
     seatNo: string;
-    mobile: string;
+    mobileNo: string;
     isEnrolled: boolean;
     isExpired: boolean;
     seasonalFees: number;
@@ -17,7 +17,6 @@ export interface Student {
     address?: string;
     aadharNo?: string;
     guardianName?: string;
-    guardianMobileNo?: string;
     guardianMobile?: string;
     gender?: string;
     dateOfJoining?: string;
@@ -50,15 +49,13 @@ export async function listActiveStudents(params?: {
 
 /** Create a new student */
 export async function createStudent(payload: {
-    firstName: string;
-    lastName: string;
-    regNo: string;
+    name: string;
     seatNo: string;
     mobileNo?: string;
     address?: string;
     aadharNo?: string;
     guardianName?: string;
-    guardianMobileNo?: string;
+    guardianMobile?: string;
     gender: string;
     seasonalFees: number;
     feesDeposited?: number;
@@ -73,11 +70,28 @@ export async function toggleEnrollment(studentId: string, enroll: boolean): Prom
     await api.patch(`/students/${studentId}/enrollment?isEnrolled=${enroll}`);
 }
 
+/** Update student details (partial update) */
+export async function updateStudent(studentId: string, payload: {
+    name?: string;
+    seatNo?: string;
+    mobileNo?: string;
+    address?: string;
+    aadharNo?: string;
+    guardianName?: string;
+    guardianMobile?: string;
+    gender?: string;
+    dateOfJoining?: string;
+    seasonalFees?: number;
+}): Promise<Student> {
+    const response = await api.put(`/students/${studentId}`, payload);
+    return response.data;
+}
+
 /** Renew membership for a student */
 export async function renewMembership(studentId: string, payload: {
     months: number;
     amount: number;
-    paymentMethod: "CASH" | "UPI" | "CARD";
+    method: "CASH" | "UPI" | "CARD";
     note?: string;
 }): Promise<void> {
     await api.post(`/memberships/${studentId}/renew`, payload);

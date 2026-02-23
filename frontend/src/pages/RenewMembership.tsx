@@ -74,7 +74,7 @@ export default function RenewMembership() {
                 await renewMembership(student.id, {
                     months: 1,
                     amount: student.seasonalFees || 500, // Use student's fee or default
-                    paymentMethod: method.toUpperCase() as any,
+                    method: method.toUpperCase() as any,
                     note: "Quick toggle renewal"
                 });
                 toast({ title: "Renewed", description: `Membership renewed for ${student.name}` });
@@ -94,7 +94,7 @@ export default function RenewMembership() {
     const onFind = async (data: FindForm) => {
         // Search API by query (using email as query)
         const results = await searchStudents(data.email);
-        const match = results.find(s => s.mobile === data.email || s.name.toLowerCase().includes(data.email.toLowerCase()));
+        const match = results.find(s => s.mobileNo === data.email || s.name.toLowerCase().includes(data.email.toLowerCase()));
         // Note: The API searchStudents implementation searches by name/id. 
         // Ideally we should have a `getByEmail` API. For now, we take the first result if explicit email search isn't supported.
         // Assuming searchStudents(q) searches broadly.
@@ -116,7 +116,7 @@ export default function RenewMembership() {
             await renewMembership(foundStudent.id, {
                 months: Number(months),
                 amount: Number(amount),
-                paymentMethod: method.toUpperCase() as any,
+                method: method.toUpperCase() as any,
                 note
             });
             toast({ title: "Membership renewed", description: `Renewal successful.` });
@@ -180,7 +180,7 @@ export default function RenewMembership() {
                                         <TableRow key={s.id} className={soon ? "bg-amber-50 dark:bg-amber-950/20" : undefined}>
                                             <TableCell>
                                                 <div className="font-medium">{s.name}</div>
-                                                <div className="text-xs text-muted-foreground truncate max-w-[220px]">{s.mobile}</div>
+                                                <div className="text-xs text-muted-foreground truncate max-w-[220px]">{s.mobileNo}</div>
                                             </TableCell>
                                             <TableCell className="hidden md:table-cell font-mono text-xs">{/* Code not in Student interface yet */ s.id}</TableCell>
                                             <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
@@ -245,7 +245,7 @@ export default function RenewMembership() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="font-medium">{selectedUser.name}</p>
-                                    <p className="text-sm text-muted-foreground">{selectedUser.mobile}</p>
+                                    <p className="text-sm text-muted-foreground">{selectedUser.mobileNo}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-muted-foreground">Active until</p>

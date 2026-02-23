@@ -14,7 +14,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
         ["Seat No", student.seatNo],
         ["Student ID", student.id],
         ["Date of Joining", student.dateOfJoining ? format(new Date(student.dateOfJoining), "dd MMM yyyy") : "—"],
-        ["Mobile", student.mobile],
+        ["Mobile", student.mobileNo],
         ["Guardian's Name", student.guardianName],
         ["Guardian's Mobile", student.guardianMobile],
         ["Gender", student.gender],

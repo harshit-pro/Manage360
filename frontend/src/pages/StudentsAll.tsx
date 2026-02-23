@@ -7,13 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StudentDetailsDialog from "@/components/StudentDetailsDialog";
+import EditStudentDialog from "@/components/EditStudentDialog";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
+import { Pencil } from "lucide-react";
 
 export default function StudentsAll() {
     // Demo seeding removed
     const [q, setQ] = useState("");
     const [selected, setSelected] = useState<Student | null>(null);
+    const [editTarget, setEditTarget] = useState<Student | null>(null);
     const [tick, setTick] = useState(0);
     const [students, setStudents] = useState<Student[]>([]);
 
@@ -72,6 +75,9 @@ export default function StudentsAll() {
                                             <div className="flex items-center gap-2">
                                                 <Switch checked={s.isEnrolled !== false} onCheckedChange={(v) => handleToggleEnrollment(s, v)} />
                                                 <Button variant="outline" size="sm" onClick={() => setSelected(s)}>View</Button>
+                                                <Button variant="outline" size="sm" onClick={() => setEditTarget(s)}>
+                                                    <Pencil className="h-3 w-3" />
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -120,7 +126,17 @@ export default function StudentsAll() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" onClick={() => setSelected(s)}>View</Button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => setSelected(s)}>View</Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setEditTarget(s)}
+                                                    className="gap-1"
+                                                >
+                                                    <Pencil className="h-3 w-3" /> Edit
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -138,6 +154,16 @@ export default function StudentsAll() {
             {selected && (
                 <StudentDetailsDialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)} student={selected} />
             )}
+
+            <EditStudentDialog
+                open={!!editTarget}
+                student={editTarget}
+                onOpenChange={(o) => !o && setEditTarget(null)}
+                onSaved={(updated) => {
+                    setStudents((prev) => prev.map((s) => s.id === updated.id ? { ...s, ...updated } : s));
+                    setEditTarget(null);
+                }}
+            />
         </div>
     );
 }
