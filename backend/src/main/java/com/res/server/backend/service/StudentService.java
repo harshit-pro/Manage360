@@ -1,6 +1,5 @@
 package com.res.server.backend.service;
 
-
 import com.res.server.backend.dto.response.StudentResponse;
 import com.res.server.backend.entity.Student;
 import org.springframework.data.domain.Page;
@@ -18,11 +17,11 @@ public interface StudentService {
             UUID libraryId,
             String q,
             Boolean isEnrolled,
-            Pageable pageable
-    );
-
+            Pageable pageable);
 
     Student updateEnrollment(UUID id, boolean isEnrolled);
 
-//    Page<StudentResponse> getAllStudents(Pageable pageable);
+    Student update(UUID id, com.res.server.backend.dto.request.StudentUpdateRequest request);
+
+    // Page<StudentResponse> getAllStudents(Pageable pageable);
 }

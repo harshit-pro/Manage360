@@ -1,6 +1,5 @@
 package com.res.server.backend.controller;
 
-
 import com.res.server.backend.dto.mapper.StudentMapper;
 import com.res.server.backend.dto.request.StudentCreateRequest;
 import com.res.server.backend.dto.response.StudentResponse;
@@ -39,25 +38,30 @@ public class StudentController {
     public Page<StudentResponse> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Boolean isEnrolled,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         UUID libraryId = LibraryContext.getLibraryId(); // 🔥 key line
         System.out.println("All students");
         return studentService.search(libraryId, q, isEnrolled, pageable)
                 .map(studentMapper::toResponse);
     }
 
-
     @PatchMapping("/{id}/enrollment")
     public StudentResponse updateEnrollment(
             @PathVariable UUID id,
-            @RequestParam boolean isEnrolled
-    ) {
+            @RequestParam boolean isEnrolled) {
         return studentMapper.toResponse(
-                studentService.updateEnrollment(id, isEnrolled)
-        );
+                studentService.updateEnrollment(id, isEnrolled));
     }
-    // for getting all students in a library, we can use the search endpoint with no query and no enrollment filter
-// rest api endpoints:
-    // for students who are currently actively enrolled, we can call the search endpoint with isEnrolled=true
+
+    @PutMapping("/{id}")
+    public StudentResponse update(
+            @PathVariable UUID id,
+            @RequestBody com.res.server.backend.dto.request.StudentUpdateRequest request) {
+        return studentMapper.toResponse(studentService.update(id, request));
+    }
+    // for getting all students in a library, we can use the search endpoint with no
+    // query and no enrollment filter
+    // rest api endpoints:
+    // for students who are currently actively enrolled, we can call the search
+    // endpoint with isEnrolled=true
 }

@@ -1,6 +1,4 @@
 package com.res.server.backend.service.impl;
-
-
 import com.res.server.backend.entity.Library;
 import com.res.server.backend.entity.Membership;
 import com.res.server.backend.entity.Student;
@@ -25,7 +23,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class StudentServiceImpl implements StudentService{
+public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
     private final MembershipRepository membershipRepository;
@@ -68,20 +66,44 @@ public class StudentServiceImpl implements StudentService{
             UUID libraryId,
             String q,
             Boolean isEnrolled,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         return studentRepository.searchByLibrary(
                 libraryId,
                 q,
                 isEnrolled,
-                pageable
-        );
+                pageable);
     }
 
     @Override
     public Student updateEnrollment(UUID id, boolean isEnrolled) {
         Student student = getById(id);
         student.setIsEnrolled(isEnrolled);
+        return studentRepository.save(student);
+    }
+
+    @Override
+    public Student update(UUID id, com.res.server.backend.dto.request.StudentUpdateRequest req) {
+        Student student = getById(id);
+        if (req.getName() != null)
+            student.setName(req.getName());
+        if (req.getSeatNo() != null)
+            student.setSeatNo(req.getSeatNo());
+        if (req.getMobileNo() != null)
+            student.setMobileNo(req.getMobileNo());
+        if (req.getAddress() != null)
+            student.setAddress(req.getAddress());
+        if (req.getAadharNo() != null)
+            student.setAadharNo(req.getAadharNo());
+        if (req.getGuardianName() != null)
+            student.setGuardianName(req.getGuardianName());
+        if (req.getGuardianMobile() != null)
+            student.setGuardianMobile(req.getGuardianMobile());
+        if (req.getGender() != null)
+            student.setGender(req.getGender());
+        if (req.getDateOfJoining() != null)
+            student.setDateOfJoining(req.getDateOfJoining());
+        if (req.getSeasonalFees() != null)
+            student.setSeasonalFees(req.getSeasonalFees());
         return studentRepository.save(student);
     }
 }
