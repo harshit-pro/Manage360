@@ -34,14 +34,16 @@ public class AuthController {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
+        String roleName = user.getRole().name();
+        String libraryName = user.getLibrary() != null ? user.getLibrary().getName() : "";
+
         String token = jwtUtil.generate(
                 Map.of(
-                        "role", user.getRole().name(),
-                        "libraryId", user.getLibrary().getId().toString()
-                ),
-                user.getEmail()
-        );
-        return new LoginResponse(token);
+                        "role", roleName,
+                        "libraryId", user.getLibrary().getId().toString(),
+                        "libraryName", libraryName),
+                user.getEmail());
+        return new LoginResponse(token, roleName, libraryName);
     }
 
     @PostMapping("/signup")

@@ -1,6 +1,5 @@
 package com.res.server.backend.dto.response;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -16,4 +15,5 @@ public class DashboardSummaryResponse {
     private int pendingFeesAmount;
     private int totalRevenue;
     private Map<String, Integer> revenueByMethod;
+    private int totalSeats;
 }

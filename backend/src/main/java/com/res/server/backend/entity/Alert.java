@@ -51,6 +51,6 @@ public class Alert extends BaseEntity {
     private AlertChannel channel; // LOG, EMAIL, WHATSAPP
 
     @Column(columnDefinition = "jsonb") // use jsonb for better performance in postgres
-    @JdbcTypeCode(SqlTypes.JSON) // store payload as json in db
+    @JdbcTypeCode(SqlTypes.JSON) // store payload as json in db in the
     private String payload;
 }

@@ -2,7 +2,9 @@ package com.res.server.backend.service.impl;
 
 import com.res.server.backend.dto.response.DashboardSummaryResponse;
 import com.res.server.backend.dto.response.EstimatedFeesResponse;
+import com.res.server.backend.entity.Library;
 import com.res.server.backend.entity.enums.MembershipStatus;
+import com.res.server.backend.repository.LibraryRepository;
 import com.res.server.backend.repository.MembershipRepository;
 import com.res.server.backend.repository.PaymentRepository;
 import com.res.server.backend.repository.StudentRepository;
@@ -24,6 +26,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final StudentRepository studentRepo;
     private final MembershipRepository membershipRepo;
     private final PaymentRepository paymentRepo;
+    private final LibraryRepository libraryRepo;
 
     @Override
     public DashboardSummaryResponse summary(int dueInDays) {
@@ -38,12 +41,17 @@ public class DashboardServiceImpl implements DashboardService {
         int pendingFees = studentRepo.totalPendingFees(libraryId);
         int totalRevenue = paymentRepo.totalRevenue(libraryId);
 
-//        Map<String, Integer> revenueByMethod = paymentRepo.revenueByMethod(libraryId)
-//                .stream()
-//                .collect(Collectors.toMap(
-//                        r -> r[0].toString(),
-//                        r -> ((Number) r[1]).intValue()
-//                ));
+        // Fetch total seats from library entity in DB
+        int totalSeats = libraryRepo.findById(libraryId)
+                .map(Library::getTotalSeats)
+                .orElse(0);
+
+        // Map<String, Integer> revenueByMethod = paymentRepo.revenueByMethod(libraryId)
+        // .stream()
+        // .collect(Collectors.toMap(
+        // r -> r[0].toString(),
+        // r -> ((Number) r[1]).intValue()
+        // ));
         return new DashboardSummaryResponse(
                 totalStudents,
                 activeStudents,
@@ -51,8 +59,8 @@ public class DashboardServiceImpl implements DashboardService {
                 due,
                 pendingFees,
                 totalRevenue,
-                Map.of() // revenueByMethod
-        );
+                Map.of(), // revenueByMethod
+                totalSeats);
     }
 
     @Override
@@ -74,7 +82,6 @@ public class DashboardServiceImpl implements DashboardService {
         return new EstimatedFeesResponse(
                 estimated,
                 collected,
-                estimated - collected
-        );
+                estimated - collected);
     }
 }

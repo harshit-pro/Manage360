@@ -3,10 +3,12 @@ package com.res.server.backend.security;
 
 import com.res.server.backend.service.context.LibraryContext;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -17,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -33,25 +36,40 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+            String token = header.substring(7).trim();
 
-            Claims claims = jwtUtil.parse(token);
+            // Skip if token is empty, literal "undefined"/"null", or doesn't have proper JWT format
+            if (token.isEmpty()
+                    || "undefined".equalsIgnoreCase(token)
+                    || "null".equalsIgnoreCase(token)
+                    || token.chars().filter(c -> c == '.').count() != 2) {
+                log.debug("Skipping invalid or missing JWT token");
+                chain.doFilter(request, response);
+                return;
+            }
 
-            String email = claims.getSubject();
-            UUID libraryId = UUID.fromString((String) claims.get("libraryId"));
-            String role = (String) claims.get("role");
+            try {
+                Claims claims = jwtUtil.parse(token);
 
-            LibraryContext.setLibraryId(libraryId);
+                String email = claims.getSubject();
+                UUID libraryId = UUID.fromString((String) claims.get("libraryId"));
+                String role = (String) claims.get("role");
 
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            List.of(() -> "ROLE_" + role)
-                    );
+                LibraryContext.setLibraryId(libraryId);
 
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                email,
+                                null,
+                                List.of(() -> "ROLE_" + role)
+                        );
+
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (JwtException | IllegalArgumentException e) {
+                log.warn("JWT token validation failed: {}", e.getMessage());
+                // Don't set authentication - request will be treated as unauthenticated
+            }
         }
 
         try {

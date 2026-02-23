@@ -24,10 +24,10 @@ public class StudentSpecifications {
             String like = "%" + q.toLowerCase() + "%";
             List<Predicate> predicates = new ArrayList<>();
 
-            predicates.add(cb.like(cb.lower(root.get("name")), like));
-            predicates.add(cb.like(cb.lower(root.get("regNo")), like));
+            predicates.add(cb.like(cb.lower(root.get("name").as(String.class)), like));
+            predicates.add(cb.like(cb.lower(root.get("regNo").as(String.class)), like));
             predicates.add(cb.like(cb.lower(root.get("seatNo").as(String.class)), like));
-            predicates.add(cb.like(cb.lower(root.get("mobileNo")), like));
+            predicates.add(cb.like(cb.lower(root.get("mobileNo").as(String.class)), like));
             // aadharNo removed from search - may be stored as bytea/encrypted
 
             return cb.or(predicates.toArray(new Predicate[0]));

@@ -20,8 +20,7 @@ public class JwtUtil {
 
     public JwtUtil(
             @Value("${security.jwt.secret}") String secret,
-            @Value("${security.jwt.expiration-minutes}") long expirationMinutes
-    ) {
+            @Value("${security.jwt.expiration-minutes}") long expirationMinutes) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMinutes * 60 * 1000;
     }
@@ -29,13 +28,14 @@ public class JwtUtil {
     // Generate JWT token with claims and subject
     public String generate(Map<String, Object> claims, String subject) {
         return Jwts.builder()
-                .subject(subject)
                 .claims(claims)
+                .subject(subject)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
                 .compact();
     }
+
     // Parse JWT token and return claims
     // claim means the payload data inside the token
     public Claims parse(String token) {

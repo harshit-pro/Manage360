@@ -42,7 +42,7 @@ public class StudentController {
             Pageable pageable
     ) {
         UUID libraryId = LibraryContext.getLibraryId(); // 🔥 key line
-
+        System.out.println("All students");
         return studentService.search(libraryId, q, isEnrolled, pageable)
                 .map(studentMapper::toResponse);
     }
@@ -57,4 +57,7 @@ public class StudentController {
                 studentService.updateEnrollment(id, isEnrolled)
         );
     }
+    // for getting all students in a library, we can use the search endpoint with no query and no enrollment filter
+// rest api endpoints:
+    // for students who are currently actively enrolled, we can call the search endpoint with isEnrolled=true
 }

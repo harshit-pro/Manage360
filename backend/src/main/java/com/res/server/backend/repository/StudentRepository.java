@@ -47,18 +47,18 @@ and s.isEnrolled = true
 """)
     Object estimatedVsCollected(UUID libraryId);
 
-    @Query("""
-    select s from Student s
-    where s.library.id = :libraryId
-      and (:isEnrolled is null or s.isEnrolled = :isEnrolled)
-      and (
-           :q is null or
-           lower(s.name) like lower(concat('%', :q, '%')) or
-           lower(s.regNo) like lower(concat('%', :q, '%')) or
-           lower(cast(s.seatNo as string)) like lower(concat('%', :q, '%')) or
-           lower(s.mobileNo) like lower(concat('%', :q, '%'))
+    @Query(value = """
+    SELECT s.* FROM students s
+    WHERE s.library_id = :libraryId
+      AND (:isEnrolled IS NULL OR s.is_enrolled = :isEnrolled)
+      AND (
+           :q IS NULL OR
+           LOWER(s.name::text) LIKE LOWER(CONCAT('%', :q, '%')) OR
+           LOWER(s.reg_no::text) LIKE LOWER(CONCAT('%', :q, '%')) OR
+           LOWER(s.seat_no::text) LIKE LOWER(CONCAT('%', :q, '%')) OR
+           LOWER(s.mobile_no::text) LIKE LOWER(CONCAT('%', :q, '%'))
       )
-""")
+""", nativeQuery = true)
     Page<Student> searchByLibrary(
             @Param("libraryId") UUID libraryId,
             @Param("q") String q,
