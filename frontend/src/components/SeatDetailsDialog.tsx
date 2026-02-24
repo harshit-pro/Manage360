@@ -33,7 +33,7 @@ export function SeatDetailsDialog({ seat, open, onOpenChange }: SeatDetailsDialo
         <DialogHeader>
           <DialogTitle>Seat {seat.number}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Status</span>
@@ -49,19 +49,21 @@ export function SeatDetailsDialog({ seat, open, onOpenChange }: SeatDetailsDialo
                   <span className="text-sm text-muted-foreground">Student Name</span>
                   <span className="font-medium">{seat.student.name}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Mobile</span>
                   <span className="font-medium">{seat.student.mobile}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Joining Date</span>
                   <span className="font-medium">
-                    {new Date(seat.student.joiningDate).toLocaleDateString()}
+                    {seat.student.joiningDate === "N/A" || !seat.student.joiningDate
+                      ? "N/A"
+                      : new Date(seat.student.joiningDate).toLocaleDateString()}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Payment Status</span>
                   <Badge variant={seat.student.paymentStatus === "paid" ? "default" : "destructive"}>

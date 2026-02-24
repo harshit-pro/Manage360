@@ -42,7 +42,17 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
         if (Array.isArray(activeStudents)) {
           activeStudents.forEach(s => {
             if (s.seatNo) {
-              studentMap.set(s.seatNo, s);
+              const raw = String(s.seatNo).trim().toUpperCase();
+              studentMap.set(raw, s);
+
+              const numMatch = raw.match(/\d+/);
+              if (numMatch) {
+                const n = parseInt(numMatch[0]);
+                studentMap.set(`S${n.toString().padStart(3, "0")}`, s);
+                studentMap.set(`S${n.toString().padStart(2, "0")}`, s);
+                studentMap.set(`S${n}`, s);
+                studentMap.set(`${n}`, s);
+              }
             }
           });
         }
@@ -50,8 +60,19 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
         // Generate grid based on totalSeats from DB and live student data
         const newSeats: Seat[] = [];
         for (let i = 1; i <= totalSeats; i++) {
-          const seatNum = `S${i.toString().padStart(3, "0")}`; // e.g., "S001"
-          const student = studentMap.get(seatNum);
+          const padded3 = i.toString().padStart(3, "0");
+          const padded2 = i.toString().padStart(2, "0");
+          const keysToTry = [`S${padded3}`, `S${padded2}`, `S${i}`, `${i}`, padded2, padded3];
+
+          let student: Student | undefined;
+          for (const key of keysToTry) {
+            if (studentMap.has(key)) {
+              student = studentMap.get(key);
+              break;
+            }
+          }
+
+          const seatNum = `S${padded3}`; // e.g., "S001"
 
           newSeats.push({
             id: i,
@@ -60,9 +81,9 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
             student: student
               ? {
                 name: student.name,
-                mobile: student.mobileNo,
-                joiningDate: student.activeUntil || "N/A",
-                paymentStatus: (student.feesDeposited >= student.seasonalFees) ? "paid" : "pending",
+                mobile: student.mobileNo || "N/A",
+                joiningDate: student.dateOfJoining || student.activeUntil || "N/A",
+                paymentStatus: ((student.feesDeposited || 0) >= (student.seasonalFees || 0)) ? "paid" : "pending",
               }
               : undefined,
           });

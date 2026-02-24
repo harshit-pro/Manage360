@@ -6,6 +6,10 @@ import { format } from "date-fns";
 type Props = { open: boolean; onOpenChange: (o: boolean) => void; student: StudentView };
 
 export default function StudentDetailsDialog({ open, onOpenChange, student }: Props) {
+    const activeUntil = student.activeUntil ?? student.membership?.activeUntil;
+    const membershipStatus = student.membership?.status ?? (student.isExpired ? "EXPIRED" : "ACTIVE");
+    const isExpired = student.isExpired ?? membershipStatus === "EXPIRED";
+
     const rows: Array<[string, string | number | undefined]> = [
         ["Name", student.name],
         ["Reg No", student.regNo],
@@ -18,11 +22,11 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
         ["Guardian's Name", student.guardianName],
         ["Guardian's Mobile", student.guardianMobile],
         ["Gender", student.gender],
-        ["Membership Period", student.membershipMonths ? `${student.membershipMonths} months` : "—"],
-        ["Seasonal Fees", student.seasonalFees],
-        ["Fees Deposited", student.feesDeposited],
-        ["Payment Status", student.isExpired ? "Not Active" : "Active"],
-        ["Active Until", student.activeUntil ? format(new Date(student.activeUntil), "dd MMM yyyy") : "—"],
+        ["Membership Status", membershipStatus],
+        ["Seasonal Fees", student.seasonalFees ? `₹${student.seasonalFees}` : "—"],
+        ["Fees Deposited", student.feesDeposited !== undefined ? `₹${student.feesDeposited}` : "—"],
+        ["Payment Status", isExpired ? "Not Active" : "Active"],
+        ["Active Until", activeUntil ? format(new Date(activeUntil), "dd MMM yyyy") : "—"],
         ["Is Enrolled", student.isEnrolled === false ? "No" : "Yes"],
     ];
 
@@ -32,8 +36,8 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3">
                         {student.name}
-                        <Badge variant={student.isEnrolled !== false && !student.isExpired ? "secondary" : "destructive"}>
-                            {student.isEnrolled !== false && !student.isExpired ? "Active" : "Not Active"}
+                        <Badge variant={student.isEnrolled !== false && !isExpired ? "secondary" : "destructive"}>
+                            {student.isEnrolled !== false && !isExpired ? "Active" : "Not Active"}
                         </Badge>
                     </DialogTitle>
                 </DialogHeader>

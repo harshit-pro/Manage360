@@ -10,10 +10,10 @@ export interface Student {
     seatNo: string;
     mobileNo: string;
     isEnrolled: boolean;
-    isExpired: boolean;
+    isExpired: boolean;       // derived: membership.status === "EXPIRED"
     seasonalFees: number;
     feesDeposited: number;
-    activeUntil?: string; // ISO date
+    activeUntil?: string;     // flattened from membership.activeUntil
     address?: string;
     aadharNo?: string;
     guardianName?: string;
@@ -22,7 +22,21 @@ export interface Student {
     dateOfJoining?: string;
     userId?: string;
     membershipMonths?: number;
-    // additional fields as needed
+    membership?: {
+        activeUntil?: string;
+        status?: string;         // "ACTIVE" | "EXPIRED" | "PENDING"
+        lastPaymentMethod?: string;
+    };
+}
+
+/** Normalize raw backend response: flatten membership fields for easy component access */
+function normalizeStudent(raw: any): Student {
+    const m = raw.membership;
+    const activeUntil: string | undefined = m?.activeUntil ?? raw.activeUntil;
+    const isExpired: boolean = m
+        ? m.status === "EXPIRED"
+        : raw.isExpired ?? (activeUntil ? new Date(activeUntil) < new Date() : true);
+    return { ...raw, activeUntil, isExpired, membership: m };
 }
 
 /** Fetch all students (paginated) */
@@ -32,8 +46,8 @@ export async function listAllStudents(params?: {
     size?: number;
 }): Promise<Student[]> {
     const response = await api.get("/students", { params });
-    // Backend returns paginated response: { content: [...], totalElements, totalPages, ... }
-    return response.data.content || response.data;
+    const data = response.data.content ?? response.data;
+    return Array.isArray(data) ? data.map(normalizeStudent) : [];
 }
 
 /** Fetch active (enrolled) students */
@@ -43,8 +57,8 @@ export async function listActiveStudents(params?: {
     size?: number;
 }): Promise<Student[]> {
     const response = await api.get("/students", { params: { ...params, isEnrolled: true } });
-    // Backend returns paginated response: { content: [...], totalElements, totalPages, ... }
-    return response.data.content || response.data;
+    const data = response.data.content ?? response.data;
+    return Array.isArray(data) ? data.map(normalizeStudent) : [];
 }
 
 /** Create a new student */
@@ -62,7 +76,7 @@ export async function createStudent(payload: {
     dateOfJoining: string;
 }): Promise<Student> {
     const response = await api.post("/students", payload);
-    return response.data;
+    return normalizeStudent(response.data);
 }
 
 /** Toggle enrollment status */
@@ -84,7 +98,7 @@ export async function updateStudent(studentId: string, payload: {
     seasonalFees?: number;
 }): Promise<Student> {
     const response = await api.put(`/students/${studentId}`, payload);
-    return response.data;
+    return normalizeStudent(response.data);
 }
 
 /** Renew membership for a student */

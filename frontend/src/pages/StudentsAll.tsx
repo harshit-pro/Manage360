@@ -108,7 +108,9 @@ export default function StudentsAll() {
                                         <TableCell className="font-mono text-xs">{regOf(s)}</TableCell>
                                         <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
                                         <TableCell className="max-w-[240px] truncate">{s.address || "—"}</TableCell>
-                                        <TableCell className="hidden sm:table-cell">{/* dateOfJoining not always returned by list */ "—"}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">
+                                            {s.dateOfJoining ? format(new Date(s.dateOfJoining), "dd MMM yyyy") : "—"}
+                                        </TableCell>
                                         <TableCell>
                                             {s.isEnrolled !== false ? (
                                                 <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>
