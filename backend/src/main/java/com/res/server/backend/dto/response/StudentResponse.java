@@ -20,6 +20,10 @@ public class StudentResponse {
     private LocalDate dateOfJoining;
     private String mobileNo;
     private GENDER gender;
+    private String address;
+    private String aadharNo;
+    private String guardianName;
+    private String guardianMobile;
     private Integer seasonalFees;
     private Integer feesDeposited;
     private Boolean isEnrolled;
