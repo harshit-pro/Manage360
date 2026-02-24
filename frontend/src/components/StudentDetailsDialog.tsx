@@ -17,7 +17,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
         ["Address", student.address],
         ["Seat No", student.seatNo],
         ["Student ID", student.id],
-        ["Date of Joining", student.dateOfJoining ? format(new Date(student.dateOfJoining), "dd MMM yyyy") : "—"],
+        ["Date of Joining", student.dateOfJoining ? format(new Date(student.dateOfJoining), "dd-MMM-yyyy") : "—"],
         ["Mobile", student.mobileNo],
         ["Guardian's Name", student.guardianName],
         ["Guardian's Mobile", student.guardianMobile],
@@ -26,7 +26,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
         ["Seasonal Fees", student.seasonalFees ? `₹${student.seasonalFees}` : "—"],
         ["Fees Deposited", student.feesDeposited !== undefined ? `₹${student.feesDeposited}` : "—"],
         ["Payment Status", isExpired ? "Not Active" : "Active"],
-        ["Active Until", activeUntil ? format(new Date(activeUntil), "dd MMM yyyy") : "—"],
+        ["Active Until", activeUntil ? format(new Date(activeUntil), "dd-MMM-yyyy") : "—"],
         ["Is Enrolled", student.isEnrolled === false ? "No" : "Yes"],
     ];
 

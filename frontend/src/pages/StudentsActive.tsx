@@ -99,7 +99,7 @@ export default function StudentsActive() {
                                         <TableCell className="font-mono text-xs">{regOf(s)}</TableCell>
                                         <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
                                         <TableCell className="max-w-[240px] truncate">{s.address || "—"}</TableCell>
-                                        <TableCell className="hidden sm:table-cell">{s.activeUntil ? format(new Date(s.activeUntil), "dd MMM yyyy") : "—"}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{s.activeUntil ? format(new Date(s.activeUntil), "dd-MMM-yyyy") : "—"}</TableCell>
                                         <TableCell>
                                             <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>
                                         </TableCell>

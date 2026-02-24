@@ -5,6 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 interface Seat {
   id: number;
@@ -15,6 +16,7 @@ interface Seat {
     mobile: string;
     joiningDate: string;
     paymentStatus: "paid" | "pending";
+    activeUntil?: string;
   };
 }
 
@@ -60,7 +62,7 @@ export function SeatDetailsDialog({ seat, open, onOpenChange }: SeatDetailsDialo
                   <span className="font-medium">
                     {seat.student.joiningDate === "N/A" || !seat.student.joiningDate
                       ? "N/A"
-                      : new Date(seat.student.joiningDate).toLocaleDateString()}
+                      : format(new Date(seat.student.joiningDate), "dd-MMM-yyyy")}
                   </span>
                 </div>
 
@@ -70,6 +72,15 @@ export function SeatDetailsDialog({ seat, open, onOpenChange }: SeatDetailsDialo
                     {seat.student.paymentStatus}
                   </Badge>
                 </div>
+
+                {seat.student.activeUntil && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Active Until</span>
+                    <span className="font-medium">
+                      {format(new Date(seat.student.activeUntil), "dd-MMM-yyyy")}
+                    </span>
+                  </div>
+                )}
               </div>
             </>
           )}

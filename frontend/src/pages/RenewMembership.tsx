@@ -184,7 +184,7 @@ export default function RenewMembership() {
                                             </TableCell>
                                             <TableCell className="hidden md:table-cell font-mono text-xs">{/* Code not in Student interface yet */ s.id}</TableCell>
                                             <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
-                                            <TableCell className="hidden sm:table-cell">{s.activeUntil ? format(new Date(s.activeUntil), "dd MMM yyyy") : "—"}</TableCell>
+                                            <TableCell className="hidden sm:table-cell">{s.activeUntil ? format(new Date(s.activeUntil), "dd-MMM-yyyy") : "—"}</TableCell>
                                             <TableCell>
                                                 <Select
                                                     value={getMethodFor(s)}
@@ -249,7 +249,7 @@ export default function RenewMembership() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-muted-foreground">Active until</p>
-                                    <p className="font-medium">{selectedUser.activeUntil ? format(new Date(selectedUser.activeUntil), "dd MMM yyyy") : "—"}</p>
+                                    <p className="font-medium">{selectedUser.activeUntil ? format(new Date(selectedUser.activeUntil), "dd-MMM-yyyy") : "—"}</p>
                                 </div>
                             </div>
                         </div>

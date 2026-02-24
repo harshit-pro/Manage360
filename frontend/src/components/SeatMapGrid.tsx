@@ -13,6 +13,7 @@ interface Seat {
     mobile: string;
     joiningDate: string;
     paymentStatus: "paid" | "pending";
+    activeUntil?: string;
   };
 }
 
@@ -84,6 +85,7 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
                 mobile: student.mobileNo || "N/A",
                 joiningDate: student.dateOfJoining || student.activeUntil || "N/A",
                 paymentStatus: ((student.feesDeposited || 0) >= (student.seasonalFees || 0)) ? "paid" : "pending",
+                activeUntil: student.activeUntil,
               }
               : undefined,
           });
