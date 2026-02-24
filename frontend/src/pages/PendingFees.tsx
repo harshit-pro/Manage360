@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { listAllStudents, StudentView } from "@/lib/students";
+import { listAllStudents, paySeasonalFee, StudentView } from "@/lib/students";
 import { seedDemoData } from "@/lib/demoData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function PendingFees() {
@@ -13,6 +18,11 @@ export default function PendingFees() {
 
   const [students, setStudents] = useState<StudentView[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [clearingStudent, setClearingStudent] = useState<StudentView | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "UPI" | "CARD">("CASH");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetch = async () => {
@@ -41,6 +51,27 @@ export default function PendingFees() {
 
   const regOf = (s: StudentView) => (s.regNo ? s.regNo.replace(/^REG-/, "CL") : "—");
   const pendingAmount = (s: StudentView) => Math.max(0, (s.seasonalFees ?? 0) - (s.feesDeposited ?? 0));
+
+  const handleClearDues = async () => {
+    if (!clearingStudent) return;
+    setIsSubmitting(true);
+    try {
+      await paySeasonalFee({
+        studentId: clearingStudent.id,
+        amount: pendingAmount(clearingStudent),
+        paymentMethod: paymentMethod,
+      });
+      toast({ title: "Payment Recorded", description: `Cleared dues for ${clearingStudent.name}.` });
+      setClearingStudent(null);
+      // Refresh students to update the data
+      const all = await listAllStudents();
+      setStudents(Array.isArray(all) ? all : []);
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.response?.data?.message || e.message || "Failed to clear dues", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -71,9 +102,14 @@ export default function PendingFees() {
                         <div className="text-xs text-muted-foreground font-mono">{regOf(s)}</div>
                         <div className="mt-1 text-sm"><Badge variant="secondary">{s.seatNo}</Badge></div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xs text-muted-foreground">Pending</div>
-                        <div className="font-semibold">₹{pendingAmount(s).toLocaleString("en-IN")}</div>
+                      <div className="text-right flex flex-col items-end gap-2">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Pending</div>
+                          <div className="font-semibold text-destructive">₹{pendingAmount(s).toLocaleString("en-IN")}</div>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setClearingStudent(s)}>
+                          Clear Dues
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -93,6 +129,7 @@ export default function PendingFees() {
                     <TableHead>Reg No</TableHead>
                     <TableHead>Seat</TableHead>
                     <TableHead className="text-right">Pending</TableHead>
+                    <TableHead className="text-center w-32">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -101,12 +138,17 @@ export default function PendingFees() {
                       <TableCell>{s.name}</TableCell>
                       <TableCell className="font-mono text-xs">{regOf(s)}</TableCell>
                       <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
-                      <TableCell className="text-right">₹{pendingAmount(s).toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="text-right text-destructive font-semibold">₹{pendingAmount(s).toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="outline" size="sm" onClick={() => setClearingStudent(s)}>
+                          Clear Dues
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {pending.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">No pending fees</TableCell>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No pending fees</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -115,6 +157,42 @@ export default function PendingFees() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!clearingStudent} onOpenChange={(o) => (!o && !isSubmitting) && setClearingStudent(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear Pending Fees</DialogTitle>
+          </DialogHeader>
+          {clearingStudent && (
+            <div className="space-y-4 py-2">
+              <div className="text-sm">
+                Student <span className="font-semibold">{clearingStudent.name}</span> has a pending due of
+                <span className="font-semibold text-destructive ml-1">₹{pendingAmount(clearingStudent).toLocaleString("en-IN")}</span>.
+              </div>
+              <div className="space-y-2">
+                <Label>Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "CASH" | "UPI" | "CARD")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CASH">Cash</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="CARD">Card</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearingStudent(null)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleClearDues} disabled={isSubmitting} className="bg-gradient-to-r from-emerald-500 to-emerald-600">
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirm Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

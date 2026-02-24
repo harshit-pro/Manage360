@@ -119,7 +119,8 @@ export async function paySeasonalFee(payload: {
     note?: string;
     referenceId?: string;
 }): Promise<void> {
-    await api.post(`/payments/seasonal`, payload);
+    const data = { ...payload, method: payload.paymentMethod };
+    await api.post(`/payments/seasonal`, data);
 }
 
 // ====================
