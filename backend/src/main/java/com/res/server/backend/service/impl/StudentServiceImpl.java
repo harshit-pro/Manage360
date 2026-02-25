@@ -1,4 +1,5 @@
 package com.res.server.backend.service.impl;
+
 import com.res.server.backend.entity.Library;
 import com.res.server.backend.entity.Membership;
 import com.res.server.backend.entity.Student;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
@@ -84,6 +86,10 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public Student update(UUID id, com.res.server.backend.dto.request.StudentUpdateRequest req) {
         Student student = getById(id);
+
+        // Capture old joining date for recalculation logic
+        LocalDate oldJoiningDate = student.getDateOfJoining();
+
         if (req.getName() != null)
             student.setName(req.getName());
         if (req.getSeatNo() != null)
@@ -100,10 +106,29 @@ public class StudentServiceImpl implements StudentService {
             student.setGuardianMobile(req.getGuardianMobile());
         if (req.getGender() != null)
             student.setGender(req.getGender());
-        if (req.getDateOfJoining() != null)
-            student.setDateOfJoining(req.getDateOfJoining());
         if (req.getSeasonalFees() != null)
             student.setSeasonalFees(req.getSeasonalFees());
+
+        // If joining date is being updated
+        if (req.getDateOfJoining() != null) {
+            student.setDateOfJoining(req.getDateOfJoining());
+
+            // Recalculate membership expiry if one exists
+            Membership membership = student.getMembership();
+            if (membership != null && membership.getActiveUntil() != null) {
+                long months;
+                if (oldJoiningDate != null) {
+                    // Calculate full months difference
+                    months = ChronoUnit.MONTHS.between(oldJoiningDate, membership.getActiveUntil());
+                } else {
+                    months = 1; // Default fallback
+                }
+                // Shift the activeUntil date based on the new joining date
+                LocalDate newActiveUntil = student.getDateOfJoining().plusMonths(Math.max(months, 1));
+                membership.setActiveUntil(newActiveUntil);
+                // The cascade = ALL on Student.membership will handle saving this
+            }
+        }
         return studentRepository.save(student);
     }
 }
