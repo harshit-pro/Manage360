@@ -10,7 +10,7 @@ import java.util.UUID;
 @Table(name = "libraries")
 @Getter
 @Setter
-public class Library {
+public class Library extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -21,6 +21,8 @@ public class Library {
     private String city;
     private Integer totalSeats;
 
+    private String contact;
+
     @Column(name = "reg_prefix")
     private String regPrefix;
 
@@ -28,15 +30,15 @@ public class Library {
     private Integer nextRegSeq = 1;
 }
 
-// set code  when library is created
-//Library library = new Library();
-//library.setName(request.getName());
-//        library.setAddress(request.getAddress());
-//        library.setCity(request.getCity());
-//        library.setTotalSeats(request.getTotalSeats());
+// set code when library is created
+// Library library = new Library();
+// library.setName(request.getName());
+// library.setAddress(request.getAddress());
+// library.setCity(request.getCity());
+// library.setTotalSeats(request.getTotalSeats());
 //
-//        library.setRegPrefix(PrefixUtil.generate(request.getName()));
-//        library.setNextRegSeq(1);
+// library.setRegPrefix(PrefixUtil.generate(request.getName()));
+// library.setNextRegSeq(1);
 //
-//libraryRepository.save(library);
+// libraryRepository.save(library);
 //
