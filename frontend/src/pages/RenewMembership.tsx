@@ -67,15 +67,15 @@ export default function RenewMembership() {
 
     const markPaidToggle = async (student: Student, checked: boolean) => {
         if (checked) {
-            // Renew for 1 month with default amount
+            // Renew for 1 month with default amount, anchored to dateOfJoining
             const method = getMethodFor(student);
-            // Assuming this is a quick action for default monthly fee
             try {
                 await renewMembership(student.id, {
                     months: 1,
-                    amount: student.seasonalFees || 500, // Use student's fee or default
+                    amount: student.seasonalFees || 500,
                     method: method.toUpperCase() as any,
-                    note: "Quick toggle renewal"
+                    note: "Quick toggle renewal",
+                    dateOfJoining: student.dateOfJoining || undefined,
                 });
                 toast({ title: "Renewed", description: `Membership renewed for ${student.name}` });
             } catch (e) {
@@ -113,12 +113,15 @@ export default function RenewMembership() {
         if (!foundStudent) return;
         const { months, amount, method, note } = renewForm.getValues();
         try {
-            await renewMembership(foundStudent.id, {
+            const updated = await renewMembership(foundStudent.id, {
                 months: Number(months),
                 amount: Number(amount),
                 method: method.toUpperCase() as any,
-                note
+                note,
+                dateOfJoining: foundStudent.dateOfJoining || undefined,
             });
+            // Update local state with the fresh student data (contains recalculated activeUntil)
+            setFoundStudent(updated);
             toast({ title: "Membership renewed", description: `Renewal successful.` });
             renewForm.reset(renewForm.getValues());
             setRefreshTick(t => t + 1);

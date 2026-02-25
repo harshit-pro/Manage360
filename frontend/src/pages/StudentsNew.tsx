@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { createStudent, nextRegNo, nextStudentCode, renewMembership } from "@/lib/students";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { CalendarClock } from "lucide-react";
 
 const schema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -51,11 +53,42 @@ export default function StudentsNew() {
     });
 
     useEffect(() => {
-        // default Date of joining as today
-        setValue("dateOfJoining", new Date().toISOString());
+        // default Date of joining as today (YYYY-MM-DD format)
+        setValue("dateOfJoining", new Date().toISOString().slice(0, 10));
+    }, [setValue]);
+
+    useEffect(() => {
         // Load next reg no
         nextRegNo().then((reg) => setValue("regNo", reg));
     }, [setValue]);
+
+    const watchedJoiningDate = watch("dateOfJoining");
+    const watchedMonths = watch("membershipMonths");
+
+    const activeUntilPreview = useMemo(() => {
+        if (!watchedJoiningDate) return null;
+        try {
+            // Parse YYYY-MM-DD safely
+            const [y, m, d] = watchedJoiningDate.slice(0, 10).split("-").map(Number);
+            if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+            // Create date in local timezone to avoid issues with new Date() parsing
+            const base = new Date(y, m - 1, d);
+            const months = Number(watchedMonths) || 1;
+
+            const result = new Date(base);
+            const targetMonth = result.getMonth() + months;
+            result.setMonth(targetMonth);
+
+            // Handle month-end overflow (e.g. Jan 31 + 1 month -> Feb 28)
+            if (result.getMonth() > (targetMonth % 12)) {
+                result.setDate(0);
+            }
+            return result;
+        } catch {
+            return null;
+        }
+    }, [watchedJoiningDate, watchedMonths]);
 
     const onSubmit = async (data: NewStudentInput) => {
         try {
@@ -144,8 +177,31 @@ export default function StudentsNew() {
                                 </div>
                                 <div className="space-y-2 md:col-span-3">
                                     <Label htmlFor="dateOfJoining">Date of Joining</Label>
-                                    <Input id="dateOfJoining" type="date" value={watch("dateOfJoining")?.slice(0, 10) || ""} onChange={(e) => setValue("dateOfJoining", new Date(e.target.value).toISOString())} />
+                                    <Input
+                                        id="dateOfJoining"
+                                        type="date"
+                                        value={watch("dateOfJoining")?.slice(0, 10) || ""}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val) {
+                                                // Store as YYYY-MM-DD + T00:00:00Z to avoid timezone shifts
+                                                setValue("dateOfJoining", `${val}T00:00:00Z`);
+                                            }
+                                        }}
+                                    />
                                 </div>
+                                {activeUntilPreview && (
+                                    <div className="md:col-span-3 bg-emerald-50 border border-emerald-100 rounded-md p-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
+                                            <CalendarClock className="h-4 w-4" />
+                                            <span>Active Until:</span>
+                                            <span className="text-emerald-800">{format(activeUntilPreview, "dd MMMM yyyy")}</span>
+                                        </div>
+                                        <div className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                            {watchedMonths} {watchedMonths === 1 ? 'Month' : 'Months'}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </section>
 

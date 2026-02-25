@@ -42,12 +42,19 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
                     </DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {rows.map(([k, v]) => (
-                        <div key={k} className="text-sm">
-                            <div className="text-muted-foreground">{k}</div>
-                            <div className="font-medium break-words">{String(v ?? "—")}</div>
-                        </div>
-                    ))}
+                    {rows.map(([k, v]) => {
+                        const isDate = k === "Active Until";
+                        const isExpiredStatus = isDate && activeUntil && new Date(activeUntil) < new Date();
+
+                        return (
+                            <div key={k} className="text-sm">
+                                <div className="text-muted-foreground">{k}</div>
+                                <div className={`font-medium break-words ${isDate ? (isExpiredStatus ? "text-destructive" : "text-emerald-600") : ""}`}>
+                                    {String(v ?? "—")}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </DialogContent>
         </Dialog>

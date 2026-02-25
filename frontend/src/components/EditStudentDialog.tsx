@@ -13,7 +13,8 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, CalendarClock } from "lucide-react";
+import { format, addMonths, differenceInCalendarMonths, parseISO } from "date-fns";
 import { Student, updateStudent } from "@/lib/students";
 
 const schema = z.object({
@@ -62,6 +63,35 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
             });
         }
     }, [student, reset]);
+
+    // Compute live 'Active Until' preview based on current dateOfJoining
+    // Preserves the original membership duration in WHOLE MONTHS and applies it to the new joining date.
+    const watchedJoiningDate = watch("dateOfJoining");
+    const activeUntilPreview = (() => {
+        if (!student || !watchedJoiningDate) return null;
+        try {
+            const newJoining = parseISO(watchedJoiningDate); // YYYY-MM-DD
+
+            const originalJoining = student.dateOfJoining ? parseISO(student.dateOfJoining.slice(0, 10)) : null;
+            const originalActiveUntil = student.activeUntil ? parseISO(student.activeUntil) : null;
+
+            if (originalActiveUntil && originalJoining) {
+                // Calculate whole months between original joining and original activeUntil
+                let months = differenceInCalendarMonths(originalActiveUntil, originalJoining);
+
+                // Adjust: if activeUntil day < joining day, difference overestimates by 1
+                if (originalActiveUntil.getDate() < originalJoining.getDate()) {
+                    months = Math.max(months - 1, 0);
+                }
+
+                // Apply the same duration to the new joining date (at least 1 month)
+                return addMonths(newJoining, Math.max(months, 1));
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    })();
 
     const onSubmit = async (data: EditForm) => {
         if (!student) return;
@@ -128,8 +158,19 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 <Input id="edit-aadharNo" placeholder="12-digit number" {...register("aadharNo")} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-dateOfJoining">Date of Joining</Label>
-                                <Input id="edit-dateOfJoining" type="date" {...register("dateOfJoining")} />
+                                <Label htmlFor="dateOfJoining">Date of Joining</Label>
+                                <Input
+                                    id="dateOfJoining"
+                                    type="date"
+                                    {...register("dateOfJoining")}
+                                />
+                                {activeUntilPreview && (
+                                    <div className="mt-2 text-xs flex items-center gap-2 text-emerald-600 bg-emerald-50 p-2 rounded-md border border-emerald-100">
+                                        <CalendarClock className="h-3 w-3" />
+                                        <span>Active until: <strong>{format(activeUntilPreview, "dd-MMM-yyyy")}</strong></span>
+                                        <span className="text-[10px] text-amber-600 font-medium">— recalculated from new joining date</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </section>

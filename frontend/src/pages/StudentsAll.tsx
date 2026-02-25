@@ -66,9 +66,16 @@ export default function StudentsAll() {
                                 <div key={s.id} className="p-3 bg-white rounded-lg shadow-sm border">
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <div className="font-medium">{s.name}</div>
-                                            <div className="text-xs text-muted-foreground font-mono">{regOf(s)}</div>
-                                            <div className="text-sm mt-1">{s.address || "—"}</div>
+                                            <div className="font-medium text-base">{s.name}</div>
+                                            <div className="text-xs text-muted-foreground font-mono flex items-center gap-1.5 mt-0.5">
+                                                <span className="bg-muted px-1 rounded">{regOf(s)}</span>
+                                                {s.dateOfJoining && (
+                                                    <span className="font-bold text-blue-600">
+                                                        Joined {format(new Date(s.dateOfJoining), "dd MMM")}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-sm mt-1 text-muted-foreground truncate">{s.address || "No address provided"}</div>
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             <Badge className={s.isEnrolled !== false ? "bg-emerald-600" : "bg-destructive"}>{s.isEnrolled !== false ? "Active" : "Not Active"}</Badge>
@@ -93,7 +100,7 @@ export default function StudentsAll() {
                                     <TableHead>Reg No</TableHead>
                                     <TableHead>Seat</TableHead>
                                     <TableHead>Address</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Joined</TableHead>
+                                    <TableHead className="hidden sm:table-cell whitespace-nowrap">Joined Date</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-center">Mark Active</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
@@ -108,8 +115,14 @@ export default function StudentsAll() {
                                         <TableCell className="font-mono text-xs">{regOf(s)}</TableCell>
                                         <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
                                         <TableCell className="max-w-[240px] truncate">{s.address || "—"}</TableCell>
-                                        <TableCell className="hidden sm:table-cell">
-                                            {s.dateOfJoining ? format(new Date(s.dateOfJoining), "dd-MMM-yyyy") : "—"}
+                                        <TableCell className="hidden sm:table-cell text-center">
+                                            {s.dateOfJoining ? (
+                                                <span className="text-sm font-semibold text-blue-600">
+                                                    {format(new Date(s.dateOfJoining), "dd MMM yyyy")}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted-foreground text-xs italic">— unknown —</span>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             {s.isEnrolled !== false ? (

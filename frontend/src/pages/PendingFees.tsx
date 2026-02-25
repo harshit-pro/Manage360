@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { listAllStudents, paySeasonalFee, StudentView } from "@/lib/students";
 import { seedDemoData } from "@/lib/demoData";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,7 +100,14 @@ export default function PendingFees() {
                       <div>
                         <div className="font-medium">{s.name}</div>
                         <div className="text-xs text-muted-foreground font-mono">{regOf(s)}</div>
-                        <div className="mt-1 text-sm"><Badge variant="secondary">{s.seatNo}</Badge></div>
+                        <div className="text-xs text-muted-foreground font-mono flex items-center gap-1.5 mt-0.5">
+                          <Badge variant="secondary" className="px-1 h-4 text-[10px]">{s.seatNo}</Badge>
+                          {s.activeUntil && (
+                            <span className={`font-bold ${new Date(s.activeUntil) < new Date() ? "text-destructive" : "text-emerald-600"}`}>
+                              Until {format(new Date(s.activeUntil), "dd MMM")}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
                         <div>
@@ -127,6 +135,7 @@ export default function PendingFees() {
                     <TableHead>Name</TableHead>
                     <TableHead>Reg No</TableHead>
                     <TableHead>Seat</TableHead>
+                    <TableHead className="hidden sm:table-cell">Active Until</TableHead>
                     <TableHead className="text-right">Pending</TableHead>
                     <TableHead className="text-center w-32">Action</TableHead>
                   </TableRow>
@@ -137,7 +146,16 @@ export default function PendingFees() {
                       <TableCell>{s.name}</TableCell>
                       <TableCell className="font-mono text-xs">{regOf(s)}</TableCell>
                       <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
-                      <TableCell className="text-right text-destructive font-semibold">₹{pendingAmount(s).toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {s.activeUntil ? (
+                          <span className={`text-sm font-semibold ${new Date(s.activeUntil) < new Date() ? "text-destructive" : "text-emerald-600"}`}>
+                            {format(new Date(s.activeUntil), "dd MMM yyyy")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">— no active membership —</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right text-destructive font-bold text-lg leading-none">₹{pendingAmount(s).toLocaleString("en-IN")}</TableCell>
                       <TableCell className="text-center">
                         <Button variant="outline" size="sm" onClick={() => setClearingStudent(s)}>
                           Clear Dues

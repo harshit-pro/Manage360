@@ -2,6 +2,7 @@
 // API service for student management (real backend integration)
 
 import api from "./api";
+import { addMonths } from "date-fns";
 
 export interface Student {
     id: string;
@@ -29,14 +30,54 @@ export interface Student {
     };
 }
 
-/** Normalize raw backend response: flatten membership fields for easy component access */
+/** Normalize raw backend response: flatten membership fields for easy component access.
+ *  Re-anchors activeUntil to dateOfJoining so the expiry always falls on the
+ *  same day-of-month as the joining date (consistent monthly cycle). */
 function normalizeStudent(raw: any): Student {
     const m = raw.membership;
-    const activeUntil: string | undefined = m?.activeUntil ?? raw.activeUntil;
+    let activeUntil: string | undefined = m?.activeUntil ?? raw.activeUntil;
+
+    // Re-anchor activeUntil to the student's dateOfJoining.
+    // The backend may calculate the expiry from "now" instead of from the joining date,
+    // resulting in a 1-day (or more) offset. We derive the intended whole-month duration
+    // and recompute from dateOfJoining.
+    const doj: string | undefined = raw.dateOfJoining;
+    if (activeUntil && doj) {
+        try {
+            // Parse date-only parts as local dates to avoid timezone day-shifts
+            const [jy, jm, jd] = doj.slice(0, 10).split("-").map(Number);
+            const joining = new Date(jy, jm - 1, jd);
+
+            const [ey, em, ed] = activeUntil.slice(0, 10).split("-").map(Number);
+            const expiry = new Date(ey, em - 1, ed);
+
+            // Derive whole-month count (mirroring ChronoUnit.MONTHS.between)
+            let months = (ey - jy) * 12 + (em - jm);
+            if (ed < jd) months = Math.max(months - 1, 0);
+            if (months <= 0 && expiry > joining) months = 1;
+
+            if (months > 0) {
+                // addMonths handles end-of-month correctly (Jan 31 + 1 → Feb 28)
+                const corrected = addMonths(joining, months);
+                // Store as local ISO string (no "Z") so format() displays the right day
+                const pad = (n: number) => String(n).padStart(2, "0");
+                activeUntil = `${corrected.getFullYear()}-${pad(corrected.getMonth() + 1)}-${pad(corrected.getDate())}T00:00:00`;
+            }
+        } catch {
+            // keep original on parse failure
+        }
+    }
+
     const isExpired: boolean = m
         ? m.status === "EXPIRED"
         : raw.isExpired ?? (activeUntil ? new Date(activeUntil) < new Date() : true);
     return { ...raw, activeUntil, isExpired, membership: m };
+}
+
+/** Fetch a single student by ID (with fresh membership state) */
+export async function getStudent(studentId: string): Promise<Student> {
+    const response = await api.get(`/students/${studentId}`);
+    return normalizeStudent(response.data);
 }
 
 /** Fetch all students (paginated) */
@@ -84,7 +125,9 @@ export async function toggleEnrollment(studentId: string, enroll: boolean): Prom
     await api.patch(`/students/${studentId}/enrollment?isEnrolled=${enroll}`);
 }
 
-/** Update student details (partial update) */
+/** Update student details (partial update).
+ *  Re-fetches the student after saving to ensure the response includes
+ *  the recalculated membership state (activeUntil / status). */
 export async function updateStudent(studentId: string, payload: {
     name?: string;
     seatNo?: string;
@@ -97,18 +140,26 @@ export async function updateStudent(studentId: string, payload: {
     dateOfJoining?: string;
     seasonalFees?: number;
 }): Promise<Student> {
-    const response = await api.put(`/students/${studentId}`, payload);
-    return normalizeStudent(response.data);
+    await api.put(`/students/${studentId}`, payload);
+    // Explicitly re-fetch to pick up the recalculated membership / activeUntil
+    const fresh = await getStudent(studentId);
+    return fresh;
 }
 
-/** Renew membership for a student */
+/** Renew membership for a student.
+ *  Passes dateOfJoining so the backend can anchor the new expiry to the
+ *  student's joining-date cycle when the membership is expired. */
 export async function renewMembership(studentId: string, payload: {
     months: number;
     amount: number;
     method: "CASH" | "UPI" | "CARD";
     note?: string;
-}): Promise<void> {
+    dateOfJoining?: string;
+}): Promise<Student> {
     await api.post(`/memberships/${studentId}/renew`, payload);
+    // Re-fetch to return the student with updated membership state
+    const fresh = await getStudent(studentId);
+    return fresh;
 }
 
 /** Pay seasonal fees */
