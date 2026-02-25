@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function PendingFees() {
   const [q, setQ] = useState("");
@@ -74,7 +73,7 @@ export default function PendingFees() {
   };
 
   return (
-    <DashboardLayout>
+    <div>
       <div className="container mx-auto p-4 space-y-4">
         <div className="flex items-end justify-between gap-3">
           <div>
@@ -193,6 +192,6 @@ export default function PendingFees() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </div>
   );
 }

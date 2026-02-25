@@ -55,11 +55,6 @@ const menuGroups = [
         url: "/dashboard",
         icon: LayoutDashboard,
       },
-      {
-        title: "Seat Map",
-        url: "/seat-map",
-        icon: MapPin,
-      },
     ],
   },
   {
@@ -132,8 +127,8 @@ function NavItem({
     item.children?.some((c) => location.pathname.startsWith(c.url));
 
   // Simple link item (no children)
-  if (!("children" in item) || !item.children) {
-    const isActive = location.pathname === item.url || location.pathname.startsWith((item.url ?? "") + "/");
+  if (!('children' in item)) {
+    const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
 
     if (!open) {
       // Collapsed: show icon with tooltip
@@ -142,7 +137,7 @@ function NavItem({
           <Tooltip>
             <TooltipTrigger asChild>
               <SidebarMenuButton asChild isActive={isActive}>
-                <NavLink to={item.url!}>
+                <NavLink to={item.url}>
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.title}</span>
                 </NavLink>
@@ -159,7 +154,7 @@ function NavItem({
     return (
       <SidebarMenuItem>
         <SidebarMenuButton asChild isActive={isActive}>
-          <NavLink to={item.url!}>
+          <NavLink to={item.url}>
             <item.icon className="h-4 w-4 shrink-0" />
             <span>{item.title}</span>
           </NavLink>

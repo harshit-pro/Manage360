@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { createStudent, nextRegNo, nextStudentCode, renewMembership } from "@/lib/students";
 import { useNavigate } from "react-router-dom";
 
@@ -96,125 +95,123 @@ export default function StudentsNew() {
     };
 
     return (
-        <DashboardLayout>
-            <div className="space-y-6">
-                <h1 className="text-2xl font-semibold">Add New Student</h1>
+        <div className="space-y-6">
+            <h1 className="text-2xl font-semibold">Add New Student</h1>
 
-                <Card className="shadow-md">
-                    <CardContent className="p-6">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            {/* Identity */}
-                            <section>
-                                <h2 className="text-lg font-medium mb-4">Identity</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">Full Name</Label>
-                                        <Input id="name" placeholder="e.g., Rohan Kumar" {...register("name")} />
-                                        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="aadharNo">Aadhar No</Label>
-                                        <Input id="aadharNo" placeholder="12-digit number" {...register("aadharNo")} />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="gender">Gender</Label>
-                                        <Select defaultValue={defaults.gender} onValueChange={(v) => setValue("gender", v as any)}>
-                                            <SelectTrigger id="gender"><SelectValue placeholder="Select gender" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="male">Male</SelectItem>
-                                                <SelectItem value="female">Female</SelectItem>
-                                                <SelectItem value="other">Other</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+            <Card className="shadow-md">
+                <CardContent className="p-6">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        {/* Identity */}
+                        <section>
+                            <h2 className="text-lg font-medium mb-4">Identity</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Full Name</Label>
+                                    <Input id="name" placeholder="e.g., Rohan Kumar" {...register("name")} />
+                                    {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
                                 </div>
-                            </section>
-
-                            {/* Institute Details */}
-                            <section>
-                                <h2 className="text-lg font-medium mb-4">Institute Details</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="regNo">Reg No</Label>
-                                        <Input id="regNo" placeholder="REG-0001" {...register("regNo")} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="seatNo">Seat No</Label>
-                                        <Input id="seatNo" placeholder="S-01" {...register("seatNo")} />
-                                        {errors.seatNo && <p className="text-sm text-destructive">{errors.seatNo.message}</p>}
-                                    </div>
-                                    <div className="space-y-2 md:col-span-3">
-                                        <Label htmlFor="dateOfJoining">Date of Joining</Label>
-                                        <Input id="dateOfJoining" type="date" value={watch("dateOfJoining")?.slice(0, 10) || ""} onChange={(e) => setValue("dateOfJoining", new Date(e.target.value).toISOString())} />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="aadharNo">Aadhar No</Label>
+                                    <Input id="aadharNo" placeholder="12-digit number" {...register("aadharNo")} />
                                 </div>
-                            </section>
 
-                            {/* Contacts */}
-                            <section>
-                                <h2 className="text-lg font-medium mb-4">Contacts</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor="address">Address</Label>
-                                        <Textarea id="address" placeholder="House no, street, area, city, pincode" {...register("address")} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="mobile">Mobile</Label>
-                                        <Input id="mobile" placeholder="10-digit mobile" {...register("mobile")} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="guardianName">Guardian's Name</Label>
-                                        <Input id="guardianName" placeholder="Parent/Guardian name" {...register("guardianName")} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="guardianMobile">Guardian's Mobile</Label>
-                                        <Input id="guardianMobile" placeholder="10-digit mobile" {...register("guardianMobile")} />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="gender">Gender</Label>
+                                    <Select defaultValue={defaults.gender} onValueChange={(v) => setValue("gender", v as any)}>
+                                        <SelectTrigger id="gender"><SelectValue placeholder="Select gender" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="female">Female</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                            </section>
-
-                            {/* Fees & Enrollment */}
-                            <section>
-                                <h2 className="text-lg font-medium mb-4">Fees & Enrollment</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="seasonalFees">Seasonal Fees</Label>
-                                        <Input id="seasonalFees" type="number" min={0} {...register("seasonalFees", { valueAsNumber: true })} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="feesDeposited">Fees Deposited</Label>
-                                        <Input id="feesDeposited" type="number" min={0} {...register("feesDeposited", { valueAsNumber: true })} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="membershipMonths">Membership Months</Label>
-                                        <Input id="membershipMonths" type="number" min={1} {...register("membershipMonths", { valueAsNumber: true })} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="paymentMethod">Payment Method</Label>
-                                        <Select defaultValue={defaults.paymentMethod} onValueChange={(v) => setValue("paymentMethod", v as any)}>
-                                            <SelectTrigger id="paymentMethod"><SelectValue placeholder="Method" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="cash">Cash</SelectItem>
-                                                <SelectItem value="upi">UPI</SelectItem>
-                                                <SelectItem value="card">Card</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex items-center gap-3 md:col-span-4">
-                                        <Switch id="isEnrolled" checked={watch("isEnrolled")} onCheckedChange={(v) => setValue("isEnrolled", v)} />
-                                        <Label htmlFor="isEnrolled">Currently Enrolled</Label>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <div className="flex justify-end">
-                                <Button type="submit" disabled={isSubmitting}>Add Student</Button>
                             </div>
-                        </form>
-                    </CardContent>
-                </Card>
-            </div>
-        </DashboardLayout>
+                        </section>
+
+                        {/* Institute Details */}
+                        <section>
+                            <h2 className="text-lg font-medium mb-4">Institute Details</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="regNo">Reg No</Label>
+                                    <Input id="regNo" placeholder="REG-0001" {...register("regNo")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="seatNo">Seat No</Label>
+                                    <Input id="seatNo" placeholder="S-01" {...register("seatNo")} />
+                                    {errors.seatNo && <p className="text-sm text-destructive">{errors.seatNo.message}</p>}
+                                </div>
+                                <div className="space-y-2 md:col-span-3">
+                                    <Label htmlFor="dateOfJoining">Date of Joining</Label>
+                                    <Input id="dateOfJoining" type="date" value={watch("dateOfJoining")?.slice(0, 10) || ""} onChange={(e) => setValue("dateOfJoining", new Date(e.target.value).toISOString())} />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Contacts */}
+                        <section>
+                            <h2 className="text-lg font-medium mb-4">Contacts</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="address">Address</Label>
+                                    <Textarea id="address" placeholder="House no, street, area, city, pincode" {...register("address")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="mobile">Mobile</Label>
+                                    <Input id="mobile" placeholder="10-digit mobile" {...register("mobile")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="guardianName">Guardian's Name</Label>
+                                    <Input id="guardianName" placeholder="Parent/Guardian name" {...register("guardianName")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="guardianMobile">Guardian's Mobile</Label>
+                                    <Input id="guardianMobile" placeholder="10-digit mobile" {...register("guardianMobile")} />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Fees & Enrollment */}
+                        <section>
+                            <h2 className="text-lg font-medium mb-4">Fees & Enrollment</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <div className="space-y-2">
+                                    <Label htmlFor="seasonalFees">Seasonal Fees</Label>
+                                    <Input id="seasonalFees" type="number" min={0} {...register("seasonalFees", { valueAsNumber: true })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="feesDeposited">Fees Deposited</Label>
+                                    <Input id="feesDeposited" type="number" min={0} {...register("feesDeposited", { valueAsNumber: true })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="membershipMonths">Membership Months</Label>
+                                    <Input id="membershipMonths" type="number" min={1} {...register("membershipMonths", { valueAsNumber: true })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                                    <Select defaultValue={defaults.paymentMethod} onValueChange={(v) => setValue("paymentMethod", v as any)}>
+                                        <SelectTrigger id="paymentMethod"><SelectValue placeholder="Method" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="cash">Cash</SelectItem>
+                                            <SelectItem value="upi">UPI</SelectItem>
+                                            <SelectItem value="card">Card</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-3 md:col-span-4">
+                                    <Switch id="isEnrolled" checked={watch("isEnrolled")} onCheckedChange={(v) => setValue("isEnrolled", v)} />
+                                    <Label htmlFor="isEnrolled">Currently Enrolled</Label>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div className="flex justify-end">
+                            <Button type="submit" disabled={isSubmitting}>Add Student</Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
