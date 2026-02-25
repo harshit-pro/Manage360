@@ -1,4 +1,6 @@
 import { Bell, LogOut, User } from "lucide-react";
+import { useState } from "react";
+import { LibraryProfileDialog } from "@/components/LibraryProfileDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,6 +19,7 @@ export function DashboardNavbar() {
   const nav = useNavigate();
   const { toast } = useToast();
   const user = currentUser();
+  const [openProfile, setOpenProfile] = useState(false);
 
   const onLogout = () => {
     signOut();
@@ -50,13 +53,14 @@ export function DashboardNavbar() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user ? user.name : "Account"}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOpenProfile(true)}>Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onLogout} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" /> Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
+            <LibraryProfileDialog open={openProfile} setOpen={setOpenProfile} />
           </DropdownMenu>
         </div>
       </div>

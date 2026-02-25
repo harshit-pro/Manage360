@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Resolver } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -42,7 +42,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
     const { toast } = useToast();
 
     const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<EditForm>({
-        resolver: zodResolver(schema),
+        resolver: zodResolver(schema) as Resolver<EditForm>,
     });
 
     // Populate form when student changes
@@ -96,7 +96,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6 pt-2">
                     {/* Identity */}
                     <section className="space-y-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Identity</h3>
