@@ -78,7 +78,6 @@ const menuGroups = [
         title: "Revenue & Fees",
         icon: DollarSign,
         children: [
-          { title: "Monthly Collection", url: "/revenue/monthly", icon: Banknote },
           { title: "Pending Fees", url: "/revenue/pending", icon: CreditCard },
           { title: "Renew Membership", url: "/renew", icon: CreditCard },
         ],

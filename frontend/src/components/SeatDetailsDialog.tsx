@@ -15,8 +15,9 @@ interface Seat {
     name: string;
     mobile: string;
     joiningDate: string;
-    paymentStatus: "paid" | "pending";
+    paymentStatus: "paid" | "unpaid";
     activeUntil?: string;
+    isExpired: boolean;
   };
 }
 
@@ -68,8 +69,9 @@ export function SeatDetailsDialog({ seat, open, onOpenChange }: SeatDetailsDialo
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Payment Status</span>
-                  <Badge variant={seat.student.paymentStatus === "paid" ? "default" : "destructive"}>
-                    {seat.student.paymentStatus}
+                  <Badge variant={seat.student.paymentStatus === "paid" ? "default" : "destructive"}
+                    className={seat.student.paymentStatus === "paid" ? "bg-emerald-600" : ""}>
+                    {seat.student.paymentStatus === "paid" ? "Paid" : "Unpaid"}
                   </Badge>
                 </div>
 

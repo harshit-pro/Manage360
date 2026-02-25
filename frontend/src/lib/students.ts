@@ -68,9 +68,16 @@ function normalizeStudent(raw: any): Student {
         }
     }
 
-    const isExpired: boolean = m
-        ? m.status === "EXPIRED"
-        : raw.isExpired ?? (activeUntil ? new Date(activeUntil) < new Date() : true);
+    // Determine expiry: always cross-check activeUntil date against today,
+    // because the backend's membership.status can be stale ("ACTIVE" even after the date passed).
+    const now = new Date();
+    // Strip time from "now" so a membership expiring today (midnight) is still considered active for the day
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dateExpired = activeUntil ? new Date(activeUntil) < todayStart : true;
+    const backendSaysExpired = m ? m.status === "EXPIRED" : raw.isExpired;
+
+    // Expired if EITHER the backend says so OR the activeUntil date has passed
+    const isExpired: boolean = backendSaysExpired || dateExpired;
     return { ...raw, activeUntil, isExpired, membership: m };
 }
 
@@ -226,12 +233,19 @@ export async function searchStudents(query: string): Promise<Student[]> {
 /** View type combining student data with its metadata */
 export type StudentView = Student & { meta?: StudentMeta };
 
-/** Generate next registration number (simple increment) */
+/** Generate next registration number (simple increment, 3-digit numeric part) */
 export async function nextRegNo(): Promise<string> {
     const all = await listAllStudents();
     const safeAll = Array.isArray(all) ? all : [];
-    const max = safeAll.reduce((max, s) => Math.max(max, parseInt(s.regNo) || 0), 0);
-    return String(max + 1).padStart(4, " 0");
+    // Extract numeric suffix from regNo (e.g. "NL007" → 7, "0012" → 12)
+    const max = safeAll.reduce((m, s) => {
+        const numMatch = (s.regNo || "").match(/(\d+)$/);
+        return numMatch ? Math.max(m, parseInt(numMatch[1], 10)) : m;
+    }, 0);
+    // Extract the alphabetic prefix from the last regNo (e.g. "NL" from "NL007")
+    const lastWithPrefix = safeAll.find(s => s.regNo && /^[A-Za-z]/.test(s.regNo));
+    const prefix = lastWithPrefix?.regNo?.match(/^([A-Za-z]+)/)?.[1] || "";
+    return `${prefix}${String(max + 1).padStart(3, "0")}`;
 }
 
 /** Generate next student code (e.g., S001) */

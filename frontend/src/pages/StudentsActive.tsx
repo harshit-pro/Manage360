@@ -74,7 +74,9 @@ export default function StudentsActive() {
                                             <div className="text-sm mt-1 text-muted-foreground truncate">{s.address || "No address provided"}</div>
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
-                                            <Badge className="bg-emerald-600">Active</Badge>
+                                            <span className={s.activeUntil && new Date(s.activeUntil) < new Date() ? "text-xs text-destructive font-medium" : "text-xs text-emerald-600 font-medium"}>
+                                                {s.activeUntil ? format(new Date(s.activeUntil), "dd-MMM-yyyy") : "—"}
+                                            </span>
                                             <div>
                                                 <Button variant="outline" size="sm" onClick={() => setSelected(s)}>View</Button>
                                             </div>
@@ -93,7 +95,7 @@ export default function StudentsActive() {
                                     <TableHead>Seat</TableHead>
                                     <TableHead>Address</TableHead>
                                     <TableHead className="whitespace-nowrap">Joined Date</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead className="whitespace-nowrap">Active Until</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -109,8 +111,12 @@ export default function StudentsActive() {
                                         <TableCell className="whitespace-nowrap font-bold text-blue-600">
                                             {s.dateOfJoining ? format(new Date(s.dateOfJoining), "dd MMM yyyy") : "—"}
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>
+                                        <TableCell className="whitespace-nowrap">
+                                            {s.activeUntil ? (
+                                                <span className={new Date(s.activeUntil) < new Date() ? "text-destructive font-medium" : "text-emerald-600 font-medium"}>
+                                                    {format(new Date(s.activeUntil), "dd-MMM-yyyy")}
+                                                </span>
+                                            ) : "—"}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="outline" size="sm" onClick={() => setSelected(s)}>View</Button>

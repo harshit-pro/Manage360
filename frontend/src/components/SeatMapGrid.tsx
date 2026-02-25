@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeatDetailsDialog } from "./SeatDetailsDialog";
-import { listActiveStudents, Student } from "@/lib/students";
+import { listAllStudents, Student } from "@/lib/students";
 import { Loader2 } from "lucide-react";
 
 interface Seat {
@@ -12,8 +12,9 @@ interface Seat {
     name: string;
     mobile: string;
     joiningDate: string;
-    paymentStatus: "paid" | "pending";
+    paymentStatus: "paid" | "unpaid";
     activeUntil?: string;
+    isExpired: boolean;
   };
 }
 
@@ -36,12 +37,12 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
           return;
         }
 
-        // Fetch active students from backend
-        const activeStudents = await listActiveStudents();
+        // Fetch ALL students (including expired) so expired seats show yellow
+        const allStudents = await listAllStudents();
         const studentMap = new Map<string, Student>();
 
-        if (Array.isArray(activeStudents)) {
-          activeStudents.forEach(s => {
+        if (Array.isArray(allStudents)) {
+          allStudents.filter(s => s.isEnrolled !== false).forEach(s => {
             if (s.seatNo) {
               const raw = String(s.seatNo).trim().toUpperCase();
               studentMap.set(raw, s);
@@ -75,6 +76,8 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
 
           const seatNum = `S${padded3}`; // e.g., "S001"
 
+          const isExpired = student?.isExpired ?? false;
+
           newSeats.push({
             id: i,
             number: seatNum,
@@ -84,8 +87,9 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
                 name: student.name,
                 mobile: student.mobileNo || "N/A",
                 joiningDate: student.dateOfJoining || student.activeUntil || "N/A",
-                paymentStatus: ((student.feesDeposited || 0) >= (student.seasonalFees || 0)) ? "paid" : "pending",
+                paymentStatus: isExpired ? "unpaid" : "paid",
                 activeUntil: student.activeUntil,
+                isExpired,
               }
               : undefined,
           });
@@ -113,7 +117,7 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
       <Card className="shadow-md animate-fade-in">
         <CardHeader>
           <CardTitle>Seat Map Grid</CardTitle>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm flex-wrap">
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 rounded bg-success" />
               <span className="text-muted-foreground">Available</span>
@@ -121,6 +125,10 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 rounded bg-destructive" />
               <span className="text-muted-foreground">Booked</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-yellow-400" />
+              <span className="text-muted-foreground">Expired</span>
             </div>
           </div>
         </CardHeader>
@@ -135,7 +143,9 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
                   transition-all hover:scale-105 hover:shadow-md
                   ${seat.available
                     ? "bg-success text-success-foreground"
-                    : "bg-destructive text-destructive-foreground"
+                    : seat.student?.isExpired
+                      ? "bg-yellow-400 text-yellow-900"
+                      : "bg-destructive text-destructive-foreground"
                   }
                 `}
               >

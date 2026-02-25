@@ -25,7 +25,7 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
         ["Membership Status", membershipStatus],
         ["Seasonal Fees", student.seasonalFees ? `₹${student.seasonalFees}` : "—"],
         ["Fees Deposited", student.feesDeposited !== undefined ? `₹${student.feesDeposited}` : "—"],
-        ["Payment Status", isExpired ? "Not Active" : "Active"],
+        ["Payment Status", isExpired ? "Unpaid" : "Paid"],
         ["Active Until", activeUntil ? format(new Date(activeUntil), "dd-MMM-yyyy") : "—"],
         ["Is Enrolled", student.isEnrolled === false ? "No" : "Yes"],
     ];
@@ -45,11 +45,12 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
                     {rows.map(([k, v]) => {
                         const isDate = k === "Active Until";
                         const isExpiredStatus = isDate && activeUntil && new Date(activeUntil) < new Date();
+                        const isPayment = k === "Payment Status";
 
                         return (
                             <div key={k} className="text-sm">
                                 <div className="text-muted-foreground">{k}</div>
-                                <div className={`font-medium break-words ${isDate ? (isExpiredStatus ? "text-destructive" : "text-emerald-600") : ""}`}>
+                                <div className={`font-medium break-words ${isDate ? (isExpiredStatus ? "text-destructive" : "text-emerald-600") : ""} ${isPayment ? (v === "Unpaid" ? "text-destructive" : "text-emerald-600") : ""}`}>
                                     {String(v ?? "—")}
                                 </div>
                             </div>

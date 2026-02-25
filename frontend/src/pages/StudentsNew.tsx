@@ -168,7 +168,7 @@ export default function StudentsNew() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="regNo">Reg No</Label>
-                                    <Input id="regNo" placeholder="REG-0001" {...register("regNo")} />
+                                    <Input id="regNo" readOnly disabled className="bg-muted cursor-not-allowed" {...register("regNo")} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="seatNo">Seat No</Label>

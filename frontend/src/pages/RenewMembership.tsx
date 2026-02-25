@@ -6,16 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-// import { getUserByEmail } from "@/lib/auth"; // Removed
-// import { ensureMembership, getMembership, renew, expireNow } from "@/lib/membership"; // Removed
 import { format } from "date-fns";
-import { listStudents, searchStudents, Student, renewMembership } from "@/lib/students";
-// import { seedDemoData } from "@/lib/demoData"; // Removed
+import { listStudents, searchStudents, Student, renewMembership, paySeasonalFee } from "@/lib/students";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bell } from "lucide-react";
+import { Bell, Loader2 } from "lucide-react";
 
 type FindForm = { email: string };
 type RenewForm = { months: number; amount: number; method: "cash" | "upi" | "card"; note?: string };
@@ -28,6 +24,10 @@ export default function RenewMembership() {
     const [refreshTick, setRefreshTick] = useState(0);
     const [methodByUser, setMethodByUser] = useState<Record<string, "cash" | "upi" | "card">>({});
     const [students, setStudents] = useState<Student[]>([]);
+    // Per-row editable fee inputs and loading/paid state
+    const [feeInputs, setFeeInputs] = useState<Record<string, { seasonalFees: number; feesDeposited: number }>>({});
+    const [renewingIds, setRenewingIds] = useState<Set<string>>(new Set());
+    const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -65,28 +65,45 @@ export default function RenewMembership() {
     const getMethodFor = (s: Student): "cash" | "upi" | "card" =>
         methodByUser[s.id] ?? "cash";
 
-    const markPaidToggle = async (student: Student, checked: boolean) => {
-        if (checked) {
-            // Renew for 1 month with default amount, anchored to dateOfJoining
-            const method = getMethodFor(student);
-            try {
-                await renewMembership(student.id, {
-                    months: 1,
-                    amount: student.seasonalFees || 500,
-                    method: method.toUpperCase() as any,
-                    note: "Quick toggle renewal",
-                    dateOfJoining: student.dateOfJoining || undefined,
-                });
-                toast({ title: "Renewed", description: `Membership renewed for ${student.name}` });
-            } catch (e) {
-                toast({ title: "Error", description: "Failed to renew membership", variant: "destructive" });
-            }
-        } else {
-            // Expire logic not available in API yet
-            toast({ title: "Not Available", description: "Manual expiry not supported via API yet.", variant: "destructive" });
+    const getFeeInputs = (s: Student) =>
+        feeInputs[s.id] ?? { seasonalFees: s.seasonalFees || 0, feesDeposited: s.feesDeposited || 0 };
+
+    const updateFeeInput = (s: Student, field: "seasonalFees" | "feesDeposited", value: number) => {
+        const current = getFeeInputs(s);
+        setFeeInputs((prev) => ({
+            ...prev,
+            [s.id]: { ...current, [field]: value },
+        }));
+    };
+
+    const handleRenewRow = async (student: Student) => {
+        const method = getMethodFor(student);
+        const fees = getFeeInputs(student);
+        setRenewingIds((prev) => new Set(prev).add(student.id));
+        try {
+            // 1. Pay seasonal fee with deposited amount
+            await paySeasonalFee({
+                studentId: student.id,
+                amount: fees.feesDeposited,
+                paymentMethod: method.toUpperCase() as "CASH" | "UPI" | "CARD",
+                note: "Renewal payment",
+            });
+            // 2. Renew membership for 1 month
+            await renewMembership(student.id, {
+                months: 1,
+                amount: fees.feesDeposited,
+                method: method.toUpperCase() as any,
+                note: "Renewal",
+                dateOfJoining: student.dateOfJoining || undefined,
+            });
+            setPaidIds((prev) => new Set(prev).add(student.id));
+            toast({ title: "Renewed", description: `Membership renewed for ${student.name}` });
+            setRefreshTick((x) => x + 1);
+        } catch (e) {
+            toast({ title: "Error", description: "Failed to renew membership", variant: "destructive" });
+        } finally {
+            setRenewingIds((prev) => { const s = new Set(prev); s.delete(student.id); return s; });
         }
-        // Force refresh of memoized lists
-        setRefreshTick((x) => x + 1);
     };
 
     const [foundStudent, setFoundStudent] = useState<Student | null>(null);
@@ -151,7 +168,7 @@ export default function RenewMembership() {
                     <Bell className="h-4 w-4" />
                     <AlertTitle>Expiring soon</AlertTitle>
                     <AlertDescription>
-                        {expiringSoon.length} student(s) have memberships expiring within 2 days. Use the toggle to renew quickly.
+                        {expiringSoon.length} student(s) have memberships expiring within 2 days.
                     </AlertDescription>
                 </Alert>
             )}
@@ -166,28 +183,50 @@ export default function RenewMembership() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
-                                    <TableHead className="hidden md:table-cell">Unique ID</TableHead>
+                                    <TableHead>Reg No</TableHead>
                                     <TableHead>Seat</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Active until</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Active Until</TableHead>
+                                    <TableHead>Seasonal Fees</TableHead>
+                                    <TableHead>Fees Deposited</TableHead>
                                     <TableHead>Method</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Paid</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {dueStudents.map((s) => {
-                                    const statusPaid = !s.isExpired;
+                                    const isPaid = paidIds.has(s.id);
+                                    const isLoading = renewingIds.has(s.id);
                                     const daysLeft = s.activeUntil ? Math.ceil((new Date(s.activeUntil).getTime() - Date.now()) / (1000 * 3600 * 24)) : 0;
                                     const soon = !s.isExpired && daysLeft <= 2 && daysLeft >= 0;
+                                    const rowFees = getFeeInputs(s);
                                     return (
                                         <TableRow key={s.id} className={soon ? "bg-amber-50 dark:bg-amber-950/20" : undefined}>
                                             <TableCell>
                                                 <div className="font-medium">{s.name}</div>
                                                 <div className="text-xs text-muted-foreground truncate max-w-[220px]">{s.mobileNo}</div>
                                             </TableCell>
-                                            <TableCell className="hidden md:table-cell font-mono text-xs">{/* Code not in Student interface yet */ s.id}</TableCell>
+                                            <TableCell className="font-mono text-xs">{s.regNo || "—"}</TableCell>
                                             <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
                                             <TableCell className="hidden sm:table-cell">{s.activeUntil ? format(new Date(s.activeUntil), "dd-MMM-yyyy") : "—"}</TableCell>
+                                            <TableCell>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    className="w-[100px]"
+                                                    value={rowFees.seasonalFees}
+                                                    onChange={(e) => updateFeeInput(s, "seasonalFees", Number(e.target.value))}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    className="w-[100px]"
+                                                    value={rowFees.feesDeposited}
+                                                    onChange={(e) => updateFeeInput(s, "feesDeposited", Number(e.target.value))}
+                                                />
+                                            </TableCell>
                                             <TableCell>
                                                 <Select
                                                     value={getMethodFor(s)}
@@ -195,7 +234,7 @@ export default function RenewMembership() {
                                                         setMethodByUser((prev) => ({ ...prev, [s.id]: v as "cash" | "upi" | "card" }))
                                                     }
                                                 >
-                                                    <SelectTrigger className="w-[120px] capitalize">
+                                                    <SelectTrigger className="w-[100px] capitalize">
                                                         <SelectValue placeholder="Select" />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -206,22 +245,28 @@ export default function RenewMembership() {
                                                 </Select>
                                             </TableCell>
                                             <TableCell>
-                                                {statusPaid ? (
+                                                {isPaid ? (
                                                     <Badge className="bg-emerald-600 hover:bg-emerald-600">Paid</Badge>
                                                 ) : (
                                                     <Badge variant="destructive">Unpaid</Badge>
                                                 )}
-                                                {soon && <span className="ml-2 text-xs text-amber-600">Expiring soon</span>}
+                                                {soon && !isPaid && <span className="ml-2 text-xs text-amber-600">Expiring soon</span>}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Switch checked={statusPaid} onCheckedChange={(c) => markPaidToggle(s, c)} />
+                                                <Button
+                                                    size="sm"
+                                                    disabled={isLoading || isPaid}
+                                                    onClick={() => handleRenewRow(s)}
+                                                >
+                                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPaid ? "Done" : "Renew"}
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     );
                                 })}
                                 {dueStudents.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No due students</TableCell>
+                                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No due students</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
