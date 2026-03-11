@@ -36,7 +36,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         long totalStudents = studentRepo.countByLibrary_Id(libraryId);
         long activeStudents = studentRepo.countByLibrary_IdAndIsEnrolledTrue(libraryId);
-        long expired = membershipRepo.countByLibrary_IdAndStatus(libraryId, MembershipStatus.EXPIRED);
+        long expired = membershipRepo.countExpiredByDate(libraryId, LocalDate.now());
         long due = membershipRepo.countDue(libraryId, limit);
         int pendingFees = studentRepo.totalPendingFees(libraryId);
         int totalRevenue = paymentRepo.totalRevenue(libraryId);

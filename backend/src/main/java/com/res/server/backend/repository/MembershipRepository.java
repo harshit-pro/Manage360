@@ -12,29 +12,43 @@ import java.util.UUID;
 
 public interface MembershipRepository extends JpaRepository<Membership, UUID> {
 
-    Optional<Membership> findByStudent_IdAndLibrary_Id(UUID studentId, UUID libraryId);
+        Optional<Membership> findByStudent_IdAndLibrary_Id(UUID studentId, UUID libraryId);
 
-    List<Membership> findByLibrary_IdAndActiveUntilLessThanEqual(UUID libraryId, LocalDate date);
+        List<Membership> findByLibrary_IdAndActiveUntilLessThanEqual(UUID libraryId, LocalDate date);
 
-    List<Membership> findByLibrary_IdAndStatus(MembershipStatus status, UUID libraryId);
+        List<Membership> findByLibrary_IdAndStatus(MembershipStatus status, UUID libraryId);
 
-    long countByLibrary_IdAndStatus(UUID libraryId, MembershipStatus status);
+        long countByLibrary_IdAndStatus(UUID libraryId, MembershipStatus status);
 
-    @Query("""
-select count(m)
-from Membership m
-where m.library.id = :libraryId
-and m.activeUntil <= :limit
-""")
-    long countDue(UUID libraryId, LocalDate limit);
+        @Query("""
+                        select count(m)
+                        from Membership m
+                        where m.library.id = :libraryId
+                                    and m.a :today
+                        """)
+        long countExpiredByDate(UUID libraryId, LocalDate today);
 
-    List<Membership> findAllByActiveUntilBeforeAndStatus(
-            LocalDate date,
-            MembershipStatus status
-    );
+        @Query("""
+                        select count(m)
+                        from Membership m
+                        where m.library.id = :libraryId
+                        and m.activeUntil <ctiveUntil < :today
+                                    """)
+        long countExpiredByDate(UUID libraryId, LocalDate today);
 
-    List<Membership> findAllByActiveUntilAndStatus(
-            LocalDate date,
-            MembershipStatus status
-    );
+        @Query("""
+                                    select count(m)
+                         from Membership m
+                         where m.library.id = :libraryId
+                        and m.activeUntil <= :limit
+                        """)
+        long countDue(UUID libraryId, LocalDate limit);
+
+        List<Membership> findAllByActiveUntilBeforeAndStatus(
+                        LocalDate date,
+                        MembershipStatus status);
+
+        List<Membership> findAllByActiveUntilAndStatus(
+                        LocalDate date,
+                        MembershipStatus status);
 }
