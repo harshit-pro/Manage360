@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { RevenueChart } from "@/components/RevenueChart";
 import { FeeEstimationPanel } from "@/components/FeeEstimationPanel";
-import { CalendarWidget } from "@/components/CalendarWidget";
 import { SeatMapGrid } from "@/components/SeatMapGrid";
 import { Users, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
 import {
@@ -116,7 +115,6 @@ const Index = () => {
         </div>
         <div className="space-y-6">
           <FeeEstimationPanel estimated={estimatedFee} collected={collectedFee} />
-          <CalendarWidget />
         </div>
       </div>
 

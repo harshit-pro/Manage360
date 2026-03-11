@@ -34,6 +34,7 @@ const schema = z.object({
 });
 
 export type NewStudentInput = z.infer<typeof schema>;
+type NewStudentFormInput = z.input<typeof schema>;
 
 export default function StudentsNew() {
     const { toast } = useToast();
@@ -47,7 +48,7 @@ export default function StudentsNew() {
         paymentMethod: "cash" as const,
     }), []);
 
-    const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<NewStudentInput>({
+    const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<NewStudentFormInput, unknown, NewStudentInput>({
         resolver: zodResolver(schema),
         defaultValues: defaults,
     });
@@ -63,7 +64,7 @@ export default function StudentsNew() {
     }, [setValue]);
 
     const watchedJoiningDate = watch("dateOfJoining");
-    const watchedMonths = watch("membershipMonths");
+    const watchedMonths = watch("membershipMonths") as number;
 
     const activeUntilPreview = useMemo(() => {
         if (!watchedJoiningDate) return null;
