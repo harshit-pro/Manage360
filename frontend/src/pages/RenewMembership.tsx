@@ -79,28 +79,46 @@ export default function RenewMembership() {
     const handleRenewRow = async (student: Student) => {
         const method = getMethodFor(student);
         const fees = getFeeInputs(student);
+        const deposit = fees.feesDeposited;
+        const renewalAmount = deposit > 0 ? deposit : fees.seasonalFees;
+        if (renewalAmount < 1) {
+            toast({
+                title: "Amount required",
+                description: "Set fees deposited or seasonal fees to at least ₹1 before renewing.",
+                variant: "destructive",
+            });
+            return;
+        }
         setRenewingIds((prev) => new Set(prev).add(student.id));
         try {
-            // 1. Pay seasonal fee with deposited amount
-            await paySeasonalFee({
-                studentId: student.id,
-                amount: fees.feesDeposited,
-                paymentMethod: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-                note: "Renewal payment",
-            });
-            // 2. Renew membership for 1 month
+            if (deposit > 0) {
+                await paySeasonalFee({
+                    studentId: student.id,
+                    amount: deposit,
+                    paymentMethod: method.toUpperCase() as "CASH" | "UPI" | "CARD",
+                    note: "Renewal payment",
+                });
+            }
             await renewMembership(student.id, {
                 months: 1,
-                amount: fees.feesDeposited,
-                method: method.toUpperCase() as any,
+                amount: renewalAmount,
+                method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
                 note: "Renewal",
                 dateOfJoining: student.dateOfJoining || undefined,
             });
             setPaidIds((prev) => new Set(prev).add(student.id));
             toast({ title: "Renewed", description: `Membership renewed for ${student.name}` });
             setRefreshTick((x) => x + 1);
-        } catch (e) {
-            toast({ title: "Error", description: "Failed to renew membership", variant: "destructive" });
+        } catch (e: unknown) {
+            const msg =
+                e && typeof e === "object" && "response" in e
+                    ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+                    : undefined;
+            toast({
+                title: "Error",
+                description: msg || "Failed to renew membership",
+                variant: "destructive",
+            });
         } finally {
             setRenewingIds((prev) => { const s = new Set(prev); s.delete(student.id); return s; });
         }
@@ -142,8 +160,12 @@ export default function RenewMembership() {
             toast({ title: "Membership renewed", description: `Renewal successful.` });
             renewForm.reset(renewForm.getValues());
             setRefreshTick(t => t + 1);
-        } catch (e) {
-            toast({ title: "Renewal failed", variant: "destructive" });
+        } catch (e: unknown) {
+            const msg =
+                e && typeof e === "object" && "response" in e
+                    ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+                    : undefined;
+            toast({ title: "Renewal failed", description: msg, variant: "destructive" });
         }
     };
 
@@ -311,7 +333,7 @@ export default function RenewMembership() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Amount (₹)</Label>
-                                <Input type="number" min={0} step={50} {...renewForm.register("amount", { valueAsNumber: true })} />
+                                <Input type="number" min={1} step={50} {...renewForm.register("amount", { valueAsNumber: true, min: 1 })} />
                             </div>
                             <div className="space-y-2">
                                 <Label>Method</Label>
