@@ -1,5 +1,7 @@
 package com.res.server.backend.repository;
 
+//import com.res.server.backend.entity.Membership;
+//import com.res.server.backend.entity.enums.MembershipStatus;
 import com.res.server.backend.entity.Membership;
 import com.res.server.backend.entity.enums.MembershipStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +18,7 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
 
         List<Membership> findByLibrary_IdAndActiveUntilLessThanEqual(UUID libraryId, LocalDate date);
 
-        List<Membership> findByLibrary_IdAndStatus(MembershipStatus status, UUID libraryId);
+        List<Membership> findByLibrary_IdAndStatus(UUID libraryId, MembershipStatus status);
 
         long countByLibrary_IdAndStatus(UUID libraryId, MembershipStatus status);
 
@@ -24,7 +26,7 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
                         select count(m)
                         from Membership m
                         where m.library.id = :libraryId
-                                    and m.a :today
+                          and m.activeUntil < :today
                         """)
         long countExpiredByDate(UUID libraryId, LocalDate today);
 
@@ -32,15 +34,7 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
                         select count(m)
                         from Membership m
                         where m.library.id = :libraryId
-                        and m.activeUntil <ctiveUntil < :today
-                                    """)
-        long countExpiredByDate(UUID libraryId, LocalDate today);
-
-        @Query("""
-                                    select count(m)
-                         from Membership m
-                         where m.library.id = :libraryId
-                        and m.activeUntil <= :limit
+                          and m.activeUntil <= :limit
                         """)
         long countDue(UUID libraryId, LocalDate limit);
 

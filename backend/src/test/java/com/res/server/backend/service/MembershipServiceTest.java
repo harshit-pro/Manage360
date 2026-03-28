@@ -69,4 +69,32 @@ class MembershipServiceTest {
         assertTrue(response.getActiveUntil().isAfter(before));
         assertEquals(MembershipStatus.ACTIVE, response.getStatus());
     }
+
+    @Test
+    void renewMembership_whenExpiredLong_withJoiningDate_producesFutureExpiry() {
+
+        Library library = new Library();
+        library.setName("Test Library 2");
+        library.setTotalSeats(50);
+        library = libraryRepository.save(library);
+
+        LibraryContext.setLibraryId(library.getId());
+
+        Student student = TestDataFactory.expiredMembershipStudent(library);
+        student.setDateOfJoining(LocalDate.of(2024, 1, 15));
+        studentRepository.save(student);
+
+        MembershipRenewResponse response =
+                membershipService.renew(
+                        student.getId(),
+                        1,
+                        500,
+                        PaymentMethod.UPI,
+                        "Renewal after long lapse");
+
+        assertTrue(
+                response.getActiveUntil().isAfter(LocalDate.now()),
+                "Expiry must be in the future, not joiningDate + 1 month in the past");
+        assertEquals(MembershipStatus.ACTIVE, response.getStatus());
+    }
 }

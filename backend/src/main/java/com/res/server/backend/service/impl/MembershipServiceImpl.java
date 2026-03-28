@@ -39,21 +39,22 @@ public class MembershipServiceImpl implements MembershipService {
 
                 Membership membership = membershipRepository
                                 .findByStudent_IdAndLibrary_Id(studentId, libraryId)
-                                .orElseThrow(() -> new IllegalStateException("Membership not found"));
+                                .orElseGet(() -> createDefaultMembership(student));
 
-                // Base date logic:
-                // - If membership is still active (future date), extend from current
-                // activeUntil
-                // - If membership is expired, start from the student's dateOfJoining
-                // (so "joined 22 Feb, 1 month" → active until 22 March, not today + 1 month)
                 LocalDate today = LocalDate.now();
                 LocalDate joiningDate = student.getDateOfJoining() != null ? student.getDateOfJoining() : today;
 
-                LocalDate baseDate = membership.getActiveUntil() != null && membership.getActiveUntil().isAfter(today)
-                                ? membership.getActiveUntil() // extend from current expiry if still active
-                                : joiningDate; // start fresh from joining date if expired
-
-                LocalDate newActiveUntil = baseDate.plusMonths(months);
+                LocalDate newActiveUntil;
+                if (membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
+                        // Still active (inclusive through activeUntil day): extend from current period end
+                        newActiveUntil = membership.getActiveUntil().plusMonths(months);
+                } else {
+                        // Expired (or ends today / stale): align to the student's monthly billing
+                        // anchor (joining date), advance month-by-month until the period end is
+                        // after today, then apply the purchased months. Mirrors frontend cycle logic.
+                        LocalDate cycleEnd = firstPeriodEndStrictlyAfter(joiningDate, today);
+                        newActiveUntil = cycleEnd.plusMonths(months - 1L);
+                }
 
                 membership.setActiveUntil(newActiveUntil);
                 membership.setStatus(MembershipStatus.ACTIVE);
@@ -71,5 +72,24 @@ public class MembershipServiceImpl implements MembershipService {
                 paymentRepository.save(payment);
                 membershipRepository.save(membership);
                 return new MembershipRenewResponse(payment.getId(), newActiveUntil, MembershipStatus.ACTIVE);
+        }
+
+        /** First calendar month boundary strictly after {@code cursor}, stepping from {@code anchor}. */
+        private static LocalDate firstPeriodEndStrictlyAfter(LocalDate anchor, LocalDate cursor) {
+                LocalDate end = anchor;
+                while (!end.isAfter(cursor)) {
+                        end = end.plusMonths(1);
+                }
+                return end;
+        }
+
+        private Membership createDefaultMembership(Student student) {
+                Membership m = new Membership();
+                m.setLibrary(student.getLibrary());
+                m.setStudent(student);
+                m.setStatus(MembershipStatus.EXPIRED);
+                LocalDate start = student.getDateOfJoining() != null ? student.getDateOfJoining() : LocalDate.now();
+                m.setActiveUntil(start.minusDays(1));
+                return membershipRepository.save(m);
         }
 }
