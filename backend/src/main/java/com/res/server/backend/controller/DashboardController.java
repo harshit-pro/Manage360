@@ -2,6 +2,7 @@ package com.res.server.backend.controller;
 
 import com.res.server.backend.dto.response.DashboardSummaryResponse;
 import com.res.server.backend.dto.response.EstimatedFeesResponse;
+import com.res.server.backend.dto.response.MonthlyRevenueExpensePoint;
 import com.res.server.backend.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/metrics")
@@ -28,5 +31,12 @@ public class DashboardController {
     @GetMapping("/estimated-fees")
     public EstimatedFeesResponse estimatedFees() {
         return dashboardService.estimatedFees();
+    }
+
+    @GetMapping("/revenue-expenses")
+    public List<MonthlyRevenueExpensePoint> revenueExpenses(
+            @RequestParam(defaultValue = "6") int months
+    ) {
+        return dashboardService.revenueExpenses(months);
     }
 }

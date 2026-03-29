@@ -2,9 +2,13 @@ package com.res.server.backend.service.impl;
 
 import com.res.server.backend.dto.response.DashboardSummaryResponse;
 import com.res.server.backend.dto.response.EstimatedFeesResponse;
+import com.res.server.backend.dto.response.MonthlyRevenueExpensePoint;
 import com.res.server.backend.entity.Library;
+import com.res.server.backend.entity.Expense;
+import com.res.server.backend.entity.Payment;
 import com.res.server.backend.entity.enums.MembershipStatus;
 import com.res.server.backend.repository.LibraryRepository;
+import com.res.server.backend.repository.ExpenseRepository;
 import com.res.server.backend.repository.MembershipRepository;
 import com.res.server.backend.repository.PaymentRepository;
 import com.res.server.backend.repository.StudentRepository;
@@ -15,8 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.UUID;
+import java.time.YearMonth;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +31,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final StudentRepository studentRepo;
     private final MembershipRepository membershipRepo;
     private final PaymentRepository paymentRepo;
+    private final ExpenseRepository expenseRepository;
     private final LibraryRepository libraryRepo;
 
     @Override
@@ -83,5 +89,68 @@ public class DashboardServiceImpl implements DashboardService {
                 estimated,
                 collected,
                 estimated - collected);
+    }
+
+    @Override
+    public List<MonthlyRevenueExpensePoint> revenueExpenses(int months) {
+        UUID libraryId = LibraryContext.getLibraryId();
+        if (libraryId == null) {
+            return List.of();
+        }
+
+        if (months <= 0) {
+            months = 6;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = today.minusMonths(months - 1).withDayOfMonth(1);
+
+        // Fetch payments and expenses once and then group by YearMonth in memory
+        List<Payment> payments = paymentRepo.findByLibrary_IdAndPaidAtBetween(
+                libraryId,
+                fromDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
+                today.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
+        );
+
+        List<Expense> expenses = expenseRepository.findByLibrary_IdAndSpentAtBetween(
+                libraryId,
+                fromDate,
+                today
+        );
+
+        Map<YearMonth, Integer> revenueByMonth = payments.stream()
+                .collect(Collectors.groupingBy(
+                        p -> YearMonth.from(p.getPaidAt().atZone(java.time.ZoneOffset.UTC)),
+                        Collectors.summingInt(p -> Optional.ofNullable(p.getAmount()).orElse(0))
+                ));
+
+        Map<YearMonth, Integer> expensesByMonth = expenses.stream()
+                .collect(Collectors.groupingBy(
+                        e -> YearMonth.from(e.getSpentAt()),
+                        Collectors.summingInt(e -> Optional.ofNullable(e.getAmount()).orElse(0))
+                ));
+
+        List<MonthlyRevenueExpensePoint> result = new ArrayList<>();
+        YearMonth cursor = YearMonth.from(fromDate);
+        YearMonth end = YearMonth.from(today);
+
+        while (!cursor.isAfter(end)) {
+            int revenue = revenueByMonth.getOrDefault(cursor, 0);
+            int exp = expensesByMonth.getOrDefault(cursor, 0);
+            String label = cursor.getMonth().name().substring(0, 3).charAt(0) +
+                    cursor.getMonth().name().substring(1, 3).toLowerCase() +
+                    " " + cursor.getYear();
+
+            result.add(new MonthlyRevenueExpensePoint(
+                    cursor.getYear(),
+                    cursor.getMonthValue(),
+                    revenue,
+                    exp,
+                    label
+            ));
+            cursor = cursor.plusMonths(1);
+        }
+
+        return result;
     }
 }

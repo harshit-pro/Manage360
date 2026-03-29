@@ -43,4 +43,10 @@ where p.library.id = :libraryId
 group by p.method
 """)
     List<Object[]> revenueByMethod(UUID libraryId);
+
+    List<Payment> findByLibrary_IdAndPaidAtBetween(
+            UUID libraryId,
+            Instant from,
+            Instant to
+    );
 }
