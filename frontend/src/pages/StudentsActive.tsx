@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StudentDetailsDialog from "@/components/StudentDetailsDialog";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-export default function StudentsActive() {
+export default function StudentsActive({ embedded = false }: { embedded?: boolean }) {
     // Demo seeding removed
     const [q, setQ] = useState("");
     const [selected, setSelected] = useState<Student | null>(null);
@@ -41,25 +42,30 @@ export default function StudentsActive() {
     const regOf = (s: Student) => s.regNo || "—";
 
     return (
-        <div className="container mx-auto p-4">
-            <div className="flex items-end justify-between mb-4 gap-3">
-                <div>
-                    <h1 className="text-2xl font-semibold">Active Students</h1>
-                    <p className="text-sm text-muted-foreground">Currently studying (enrolled and not expired)</p>
-                </div>
-                <div className="w-full md:w-80">
+        <div className={cn("min-w-0 max-w-full", embedded ? "" : "container mx-auto p-4")}>
+            <div className={cn("mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between")}>
+                {!embedded && (
+                    <div>
+                        <h1 className="text-2xl font-semibold">Active Students</h1>
+                        <p className="text-sm text-muted-foreground">Currently studying (enrolled and not expired)</p>
+                    </div>
+                )}
+                {embedded && (
+                    <h2 className="text-lg font-semibold text-foreground">Active students</h2>
+                )}
+                <div className={cn("w-full", !embedded && "md:w-80")}>
                     <Label htmlFor="sactive" className="sr-only">Search</Label>
-                    <Input id="sactive" placeholder="Search name, reg no, code, seat, phone" value={q} onChange={(e) => setQ(e.target.value)} />
+                    <Input id="sactive" placeholder="Search name, reg, seat, phone" value={q} onChange={(e) => setQ(e.target.value)} className="touch-manipulation" />
                 </div>
             </div>
 
             <Card>
                 <CardContent className="p-0">
                     <div className="p-4 text-sm text-muted-foreground">Total {students.length} active student(s)</div>
-                    <div className="md:hidden p-4">
+                    <div className="md:hidden p-3 sm:p-4">
                         <div className="space-y-3">
                             {students.map((s) => (
-                                <div key={s.id} className="p-3 bg-white rounded-lg shadow-sm border">
+                                <div key={s.id} className="rounded-xl border border-border/80 bg-card p-3 shadow-sm touch-manipulation">
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <div className="font-medium text-base">{s.name}</div>

@@ -45,6 +45,21 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { Location } from "react-router-dom";
+
+/** Match route including query (e.g. /students?tab=all). */
+function routeMatches(loc: Pick<Location, "pathname" | "search">, to: string): boolean {
+  const base = "http://local";
+  const target = new URL(to, base);
+  if (loc.pathname !== target.pathname) return false;
+  if (!target.search) return true;
+  const want = new URLSearchParams(target.search);
+  const have = new URLSearchParams(loc.search);
+  for (const [k, v] of want.entries()) {
+    if (have.get(k) !== v) return false;
+  }
+  return true;
+}
 
 const menuGroups = [
   {
@@ -64,9 +79,9 @@ const menuGroups = [
         title: "Students",
         icon: Users,
         children: [
-          { title: "All Students", url: "/students", icon: List },
-          { title: "Active Students", url: "/students/active", icon: UserCheck },
-          { title: "Add New Student", url: "/students/new", icon: UserPlus },
+          { title: "All Students", url: "/students?tab=all", icon: List },
+          { title: "Active Students", url: "/students?tab=active", icon: UserCheck },
+          { title: "Add New Student", url: "/students?tab=add", icon: UserPlus },
         ],
       },
     ],
@@ -120,10 +135,9 @@ function NavItem({
   const { open } = useSidebar();
   const location = useLocation();
 
-  // Check if any child is active
   const isChildActive =
     "children" in item &&
-    item.children?.some((c) => location.pathname.startsWith(c.url));
+    item.children?.some((c) => routeMatches(location, c.url));
 
   // Simple link item (no children)
   if (!('children' in item)) {
@@ -246,14 +260,14 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       {/* Brand header */}
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-2 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 text-primary-foreground font-bold text-sm shadow-sm">
+        <div className="flex items-center gap-3 px-2 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary font-bold text-sm text-primary-foreground shadow-md">
             M
           </div>
           {open && (
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-base text-foreground tracking-tight leading-none">
-                manage360
+              <span className="text-base font-bold leading-none tracking-tight text-foreground">
+                Manage360
               </span>
               {user && (
                 <span className="text-xs text-muted-foreground truncate mt-0.5">
@@ -300,8 +314,8 @@ export function AppSidebar() {
       {/* Footer */}
       {open && (
         <SidebarFooter className="border-t border-sidebar-border">
-          <p className="text-xs text-muted-foreground text-center py-1">
-            © 2025 manage360
+          <p className="py-2 text-center text-[11px] text-muted-foreground">
+            © {new Date().getFullYear()} Manage360
           </p>
         </SidebarFooter>
       )}

@@ -153,6 +153,17 @@ export async function updateStudent(studentId: string, payload: {
     return fresh;
 }
 
+/**
+ * Number of membership months implied by a seasonal fee rate and amount deposited,
+ * when the deposit is a whole multiple (e.g. seasonal 500 + deposit 1500 → 3).
+ * Returns null if seasonal < 1, deposit is below one period, or not an exact multiple.
+ */
+export function membershipMonthsFromDeposit(seasonalFees: number, feesDeposited: number): number | null {
+    if (seasonalFees < 1 || feesDeposited < seasonalFees) return null;
+    if (feesDeposited % seasonalFees !== 0) return null;
+    return feesDeposited / seasonalFees;
+}
+
 /** Renew membership for a student.
  *  Passes dateOfJoining so the backend can anchor the new expiry to the
  *  student's joining-date cycle when the membership is expired. */

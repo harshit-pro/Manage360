@@ -6,7 +6,9 @@ import { StatCard } from "@/components/StatCard";
 import { RevenueChart } from "@/components/RevenueChart";
 import { FeeEstimationPanel } from "@/components/FeeEstimationPanel";
 import { SeatMapGrid } from "@/components/SeatMapGrid";
-import { Users, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Users, DollarSign, TrendingUp, AlertCircle, LayoutDashboard } from "lucide-react";
 import {
   fetchDashboardSummary,
   fetchEstimatedFees,
@@ -48,15 +50,31 @@ const Index = () => {
   const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading dashboard…</div>;
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48 rounded-lg" />
+          <Skeleton className="h-4 w-72 max-w-full rounded-md" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-72 w-full rounded-xl md:h-80" />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <AlertCircle className="h-10 w-10 text-destructive" />
-        <p className="text-destructive font-medium">{error}</p>
-        <button
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
+          <AlertCircle className="h-7 w-7 text-destructive" />
+        </div>
+        <p className="max-w-md text-sm font-medium text-destructive">{error}</p>
+        <Button
+          type="button"
           onClick={() => {
             setLoading(true);
             setError(null);
@@ -67,17 +85,14 @@ const Index = () => {
               })
               .catch((e) =>
                 setError(
-                  e?.response?.data?.message ||
-                  e?.message ||
-                  "Failed to load dashboard data."
-                )
+                  e?.response?.data?.message || e?.message || "Failed to load dashboard data.",
+                ),
               )
               .finally(() => setLoading(false));
           }}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
         >
-          Retry
-        </button>
+          Try again
+        </Button>
       </div>
     );
   }
@@ -93,22 +108,30 @@ const Index = () => {
   const collectedFee = fees?.collected ?? 0;
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-8">
+      <header className="space-y-1 border-b border-border/60 pb-4 md:pb-6">
+        <div className="flex items-center gap-2 text-primary">
+          <LayoutDashboard className="h-5 w-5 shrink-0" aria-hidden />
+          <span className="text-xs font-bold uppercase tracking-widest">Overview</span>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Dashboard</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+          Enrollment, revenue, and seat status at a glance — optimized for quick checks on mobile.
+        </p>
+      </header>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Student Enrolled" value={totalStudents} icon={Users} gradient="primary" />
         <StatCard title="Total Active Students" value={activeStudents} icon={Users} gradient="secondary" />
         <StatCard title="Total Revenue" value={inr(totalRevenue)} icon={DollarSign} gradient="accent" />
         <StatCard title="Pending Fees" value={inr(pendingAmount)} icon={AlertCircle} gradient="success" />
       </div>
 
-      {/* Secondary Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Expired Memberships" value={expiredCount} icon={AlertCircle} gradient="accent" />
         <StatCard title="Total Collections" value={inr(totalRevenue)} icon={TrendingUp} gradient="success" />
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <RevenueChart />
@@ -118,7 +141,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Seat Map */}
       <SeatMapGrid totalSeats={totalSeats} />
     </div>
   );

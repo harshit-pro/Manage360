@@ -29,22 +29,19 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen grid place-items-center p-4 bg-gray-50 dark:bg-gray-900 relative overflow-hidden transition-colors duration-300">
-            {/* Background Animations */}
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob dark:bg-purple-900 dark:mix-blend-screen"></div>
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000 dark:bg-indigo-900 dark:mix-blend-screen"></div>
-            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000 dark:bg-pink-900 dark:mix-blend-screen"></div>
+        <div className="relative grid min-h-svh min-h-[100dvh] place-items-center overflow-hidden bg-background p-4 safe-pb safe-pt">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary)/0.12),transparent_55%),radial-gradient(ellipse_at_bottom,_hsl(var(--muted)),transparent_45%)]" />
 
-            <Card className="w-full max-w-md relative z-10 backdrop-blur-xl bg-white/60 dark:bg-black/40 border-white/20 shadow-2xl animate-in fade-in zoom-in duration-500">
-                <CardHeader className="space-y-1 text-center">
-                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                        <LogIn className="w-6 h-6 text-primary" />
+            <Card className="relative z-10 w-full max-w-md border-border/80 bg-card/95 shadow-xl backdrop-blur-md animate-in fade-in zoom-in duration-300">
+                <CardHeader className="space-y-1 pb-2 text-center">
+                    <div className="mx-auto mb-1 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
+                        <LogIn className="h-6 w-6" />
                     </div>
-                    <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                        Welcome Back
+                    <CardTitle className="text-2xl font-bold tracking-tight md:text-3xl">
+                        Welcome back
                     </CardTitle>
-                    <CardDescription>
-                        Sign in to access your library dashboard
+                    <CardDescription className="text-base">
+                        Sign in to your library workspace
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -56,7 +53,7 @@ export default function Login() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    className="pl-9 bg-white/50 dark:bg-black/20"
+                                    className="pl-9"
                                     placeholder="admin@library.com"
                                     {...register("email", { required: "Email is required" })}
                                 />
@@ -70,14 +67,14 @@ export default function Login() {
                                 <Input
                                     id="password"
                                     type="password"
-                                    className="pl-9 bg-white/50 dark:bg-black/20"
+                                    className="pl-9"
                                     placeholder="••••••••"
                                     {...register("password", { required: "Password is required" })}
                                 />
                             </div>
                             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
                         </div>
-                        <Button type="submit" className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 transition-all duration-300 transform hover:scale-[1.01]" disabled={isSubmitting}>
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

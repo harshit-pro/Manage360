@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, GraduationCap, Users, Wallet, ArrowRight, LayoutDashboard, ShieldCheck, Zap } from "lucide-react";
-import { getLibraryName } from "@/lib/auth";
-
 const features = [
     {
         icon: GraduationCap,
@@ -52,75 +50,69 @@ const features = [
 
 export default function Landing() {
     return (
-        <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
-            {/* Navbar */}
-            <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
-                <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                    <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 text-primary-foreground shadow-sm">
+        <div className="min-h-screen bg-background selection:bg-primary/15 safe-pb">
+            <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 safe-pt">
+                <div className="container mx-auto flex h-14 items-center justify-between gap-3 px-4 md:h-16">
+                    <Link to="/" className="flex min-w-0 items-center gap-2 font-bold tracking-tight">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm text-primary-foreground shadow-md">
                             M
                         </div>
-                        <span>manage360</span>
+                        <span className="truncate text-lg md:text-xl">Manage360</span>
                     </Link>
-                    <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-                        <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-                        <a href="#testimonials" className="hover:text-foreground transition-colors">Testimonials</a>
-                        <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+                    <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
+                        <a href="#features" className="transition-colors hover:text-foreground">Features</a>
+                        <a href="#pricing" className="transition-colors hover:text-foreground">Pricing</a>
                     </nav>
-                    <div className="flex items-center gap-3">
-                        <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-                            Log in
-                        </Link>
-                        <Button asChild size="sm" className="rounded-full px-6 shadow-md hover:shadow-lg transition-all">
-                            <Link to="/signup">Get Started</Link>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                            <Link to="/login">Log in</Link>
+                        </Button>
+                        <Button asChild size="sm" className="rounded-full px-4 shadow-md md:px-6">
+                            <Link to="/signup">Get started</Link>
                         </Button>
                     </div>
                 </div>
             </header>
 
             {/* Hero Section */}
-            <section className="relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-32">
-                {/* Background Elements */}
-                <div className="absolute inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-                <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
-                <div className="absolute right-0 top-0 -z-10 h-[500px] w-[500px] bg-blue-500/10 opacity-30 blur-[100px]"></div>
+            <section className="relative overflow-hidden pb-20 pt-10 md:pb-32 md:pt-20">
+                <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,hsl(var(--border)/0.5)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.5)_1px,transparent_1px)] bg-[size:20px_28px]" />
+                <div className="absolute left-1/2 top-0 -z-10 h-[280px] w-[min(100%,480px)] -translate-x-1/2 rounded-full bg-primary/15 blur-[90px]" />
 
                 <div className="container mx-auto px-4 text-center">
-                    <Badge variant="outline" className="mb-6 rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        ✨ The Modern OS for Libraries
+                    <Badge variant="outline" className="mb-5 rounded-full border-primary/25 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary md:mb-6 md:px-4 md:text-sm">
+                        Built for study centers & libraries
                     </Badge>
 
-                    <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl md:text-7xl animate-in fade-in slide-in-from-bottom-6 duration-700 fill-mode-both delay-100">
-                        Manage your library with <br className="hidden md:block" />
-                        <span className="bg-gradient-to-r from-primary via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Unmatched Intelligence
-                        </span>
+                    <h1 className="mx-auto max-w-4xl text-balance text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+                        Run your library from{" "}
+                        <span className="text-primary">phone or desk</span>
                     </h1>
 
-                    <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl animate-in fade-in slide-in-from-bottom-6 duration-700 fill-mode-both delay-200">
+                    <p className="mx-auto mt-5 max-w-2xl text-pretty text-base text-muted-foreground md:mt-6 md:text-lg">
                         Streamline enrollments, automate fee reminders, and optimize seat allocation.
                         The all-in-one platform designed for modern study centers.
                     </p>
 
-                    <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row animate-in fade-in slide-in-from-bottom-6 duration-700 fill-mode-both delay-300">
-                        <Button asChild size="lg" className="h-12 min-w-[180px] rounded-full text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
+                    <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:mx-auto sm:max-w-none sm:flex-row sm:justify-center md:mt-10">
+                        <Button asChild size="lg" className="h-12 w-full rounded-full text-base shadow-md sm:w-auto sm:min-w-[200px]">
                             <Link to="/signup">
-                                Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                                Start free <ArrowRight className="ml-1 h-4 w-4" />
                             </Link>
                         </Button>
-                        <Button asChild size="lg" variant="outline" className="h-12 min-w-[180px] rounded-full border-primary/20 bg-background/50 backdrop-blur-sm hover:bg-accent/50 text-base">
-                            <Link to="/login">View Demo</Link>
+                        <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full border-primary/25 bg-background/80 text-base backdrop-blur-sm sm:w-auto sm:min-w-[200px]">
+                            <Link to="/login">Sign in</Link>
                         </Button>
                     </div>
 
-                    <div className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground animate-in fade-in duration-1000 delay-500">
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground md:mt-10 md:text-sm">
                         <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-green-500" />
-                            <span>No credit card required</span>
+                            <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                            <span>Enrollment & renewals</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-green-500" />
-                            <span>14-day free trial</span>
+                            <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                            <span>Mobile-friendly workspace</span>
                         </div>
                     </div>
 
@@ -242,11 +234,11 @@ export default function Landing() {
                 <div className="container mx-auto px-4 py-12">
                     <div className="grid gap-8 md:grid-cols-4 lg:grid-cols-5">
                         <div className="col-span-2">
-                            <Link to="/" className="mb-4 flex items-center gap-2 font-bold text-xl">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 text-primary-foreground shadow-sm">
+                            <Link to="/" className="mb-4 flex items-center gap-2 text-xl font-bold">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
                                     M
                                 </div>
-                                <span>manage360</span>
+                                <span>Manage360</span>
                             </Link>
                             <p className="max-w-xs text-sm text-muted-foreground">
                                 The most advanced library management system for modern study centers and co-working spaces.

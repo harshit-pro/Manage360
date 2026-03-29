@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { createStudent, nextRegNo, nextStudentCode, renewMembership } from "@/lib/students";
+import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit } from "@/lib/students";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarClock } from "lucide-react";
 
@@ -36,7 +37,7 @@ const schema = z.object({
 export type NewStudentInput = z.infer<typeof schema>;
 type NewStudentFormInput = z.input<typeof schema>;
 
-export default function StudentsNew() {
+export default function StudentsNew({ embedded = false }: { embedded?: boolean }) {
     const { toast } = useToast();
     const nav = useNavigate();
     const defaults = useMemo(() => ({
@@ -64,7 +65,20 @@ export default function StudentsNew() {
     }, [setValue]);
 
     const watchedJoiningDate = watch("dateOfJoining");
-    const watchedMonths = watch("membershipMonths") as number;
+    const watchedSeasonalFees = watch("seasonalFees") as number;
+    const watchedFeesDeposited = watch("feesDeposited") as number;
+    const watchedMembershipMonths = watch("membershipMonths") as number;
+
+    /** Months covered: deposit ÷ seasonal when deposited > 0 and divides evenly; else form "membership months". */
+    const resolvedMembershipMonths = useMemo(() => {
+        const seasonal = Number(watchedSeasonalFees) || 0;
+        const dep = Number(watchedFeesDeposited) || 0;
+        if (dep > 0) {
+            const m = membershipMonthsFromDeposit(seasonal, dep);
+            if (m !== null) return m;
+        }
+        return Number(watchedMembershipMonths) || 1;
+    }, [watchedSeasonalFees, watchedFeesDeposited, watchedMembershipMonths]);
 
     const activeUntilPreview = useMemo(() => {
         if (!watchedJoiningDate) return null;
@@ -75,7 +89,7 @@ export default function StudentsNew() {
 
             // Create date in local timezone to avoid issues with new Date() parsing
             const base = new Date(y, m - 1, d);
-            const months = Number(watchedMonths) || 1;
+            const months = resolvedMembershipMonths;
 
             const result = new Date(base);
             const targetMonth = result.getMonth() + months;
@@ -89,7 +103,7 @@ export default function StudentsNew() {
         } catch {
             return null;
         }
-    }, [watchedJoiningDate, watchedMonths]);
+    }, [watchedJoiningDate, resolvedMembershipMonths]);
 
     const onSubmit = async (data: NewStudentInput) => {
         try {
@@ -108,20 +122,39 @@ export default function StudentsNew() {
                 feesDeposited: data.feesDeposited,
             });
 
-            // Initial membership (optional but helpful)
             if (data.membershipMonths > 0) {
+                const seasonal = data.seasonalFees;
+                let months: number;
+                let amount: number;
+                if (data.feesDeposited > 0) {
+                    const m = membershipMonthsFromDeposit(seasonal, data.feesDeposited);
+                    if (m === null) {
+                        toast({
+                            title: "Invalid fees",
+                            description:
+                                "Fees deposited must be a whole multiple of seasonal fees (each multiple adds one month, e.g. ₹500 → ₹500, ₹1000, ₹1500).",
+                            variant: "destructive",
+                        });
+                        return;
+                    }
+                    months = m;
+                    amount = data.feesDeposited;
+                } else {
+                    months = data.membershipMonths;
+                    amount = seasonal * months;
+                }
                 await renewMembership(student.id, {
-                    months: data.membershipMonths,
-                    amount: data.feesDeposited > 0 ? data.feesDeposited : data.seasonalFees,
+                    months,
+                    amount,
                     method: data.paymentMethod && ["CASH", "UPI", "CARD"].includes(data.paymentMethod.toUpperCase())
                         ? (data.paymentMethod.toUpperCase() as "CASH" | "UPI" | "CARD")
                         : "CASH",
-                    note: "Initial Enrollment"
+                    note: "Initial Enrollment",
                 });
             }
 
             toast({ title: "Student added", description: `${data.name} has been registered successfully.` });
-            nav("/students");
+            nav(embedded ? "/students?tab=all" : "/students");
         } catch (e: any) {
             const message = e?.response?.data?.message || e.message || String(e);
             toast({ title: "Could not add student", description: message, variant: "destructive" });
@@ -129,11 +162,14 @@ export default function StudentsNew() {
     };
 
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-semibold">Add New Student</h1>
+        <div className={cn("min-w-0 space-y-4 md:space-y-6", embedded && "pb-2")}>
+            {!embedded && <h1 className="text-2xl font-semibold">Add New Student</h1>}
+            {embedded && (
+                <h2 className="text-lg font-semibold text-foreground">New enrollment</h2>
+            )}
 
-            <Card className="shadow-md">
-                <CardContent className="p-6">
+            <Card className={cn("shadow-md", embedded && "border-border/80 shadow-sm")}>
+                <CardContent className={cn("p-4 md:p-6", embedded && "px-3 sm:px-6")}>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         {/* Identity */}
                         <section>
@@ -199,7 +235,7 @@ export default function StudentsNew() {
                                             <span className="text-emerald-800">{format(activeUntilPreview, "dd MMMM yyyy")}</span>
                                         </div>
                                         <div className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                            {watchedMonths} {watchedMonths === 1 ? 'Month' : 'Months'}
+                                            {resolvedMembershipMonths} {resolvedMembershipMonths === 1 ? "Month" : "Months"}
                                         </div>
                                     </div>
                                 )}
@@ -256,6 +292,9 @@ export default function StudentsNew() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <p className="text-xs text-muted-foreground md:col-span-4">
+                                    If fees deposited is greater than zero, membership length is deposit ÷ seasonal fee (must divide evenly). Otherwise, membership months sets the length and the renewal amount is seasonal fee × months.
+                                </p>
                                 <div className="flex items-center gap-3 md:col-span-4">
                                     <Switch id="isEnrolled" checked={watch("isEnrolled")} onCheckedChange={(v) => setValue("isEnrolled", v)} />
                                     <Label htmlFor="isEnrolled">Currently Enrolled</Label>

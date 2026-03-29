@@ -28,29 +28,32 @@ export function DashboardNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="flex h-16 items-center gap-4 px-6">
-        {/* Sidebar toggle */}
-        <SidebarTrigger />
+    <header className="sticky top-0 z-20 border-b border-border/80 bg-card/90 shadow-sm backdrop-blur-lg supports-[backdrop-filter]:bg-card/75 safe-pt">
+      <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-3 md:h-16 md:gap-4 md:px-6">
+        {/* Sidebar: desktop rail toggle; on phones use bottom “Menu” — still show on md+ */}
+        <SidebarTrigger className="hidden md:inline-flex touch-manipulation" />
+
+        <div className="min-w-0 md:hidden">
+          <span className="block truncate text-sm font-semibold tracking-tight text-foreground">Manage360</span>
+          <span className="block truncate text-[10px] text-muted-foreground">Library workspace</span>
+        </div>
 
         {/* Spacer — pushes actions to the right */}
         <div className="flex-1" />
 
         {/* Right-side actions */}
-        <div className="flex items-center gap-2">
-          {/* Notification bell */}
-          <Button variant="ghost" size="icon" className="relative">
+        <div className="flex items-center gap-1 md:gap-2">
+          <Button variant="ghost" size="icon" className="relative hidden h-11 w-11 touch-manipulation sm:inline-flex md:h-10 md:w-10">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
           </Button>
 
-          {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full"
+                className="h-11 w-11 touch-manipulation rounded-full md:h-10 md:w-10"
                 aria-label="User menu"
               >
                 <User className="h-5 w-5" />

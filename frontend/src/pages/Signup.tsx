@@ -69,22 +69,19 @@ export default function Signup() {
     };
 
     return (
-        <div className="min-h-screen grid place-items-center p-4 bg-gray-50 dark:bg-gray-900 relative overflow-hidden transition-colors duration-300">
-            {/* Background Animations */}
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob dark:bg-purple-900 dark:mix-blend-screen"></div>
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000 dark:bg-indigo-900 dark:mix-blend-screen"></div>
-            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000 dark:bg-pink-900 dark:mix-blend-screen"></div>
+        <div className="relative grid min-h-svh min-h-[100dvh] place-items-center overflow-hidden bg-background p-4 py-8 safe-pb safe-pt">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary)/0.12),transparent_50%),radial-gradient(ellipse_at_bottom_right,_hsl(var(--muted)),transparent_40%)]" />
 
-            <Card className="w-full max-w-2xl relative z-10 backdrop-blur-xl bg-white/60 dark:bg-black/40 border-white/20 shadow-2xl animate-in fade-in zoom-in duration-500">
-                <CardHeader className="space-y-1 text-center">
-                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                        <Library className="w-6 h-6 text-primary" />
+            <Card className="relative z-10 w-full max-w-2xl border-border/80 bg-card/95 shadow-xl backdrop-blur-md animate-in fade-in zoom-in duration-300">
+                <CardHeader className="space-y-1 pb-2 text-center">
+                    <div className="mx-auto mb-1 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
+                        <Library className="h-6 w-6" />
                     </div>
-                    <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                        Create Your Library
+                    <CardTitle className="text-2xl font-bold tracking-tight md:text-3xl">
+                        Create your library
                     </CardTitle>
-                    <CardDescription>
-                        Set up your digital library management system in seconds
+                    <CardDescription className="text-base">
+                        One account for your team — works on mobile and desktop
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -94,7 +91,7 @@ export default function Signup() {
                                 <Label htmlFor="libraryName">Library Name *</Label>
                                 <div className="relative">
                                     <Library className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input id="libraryName" className="pl-9 bg-white/50 dark:bg-black/20" placeholder="Central Library" value={form.libraryName} onChange={handleChange} />
+                                    <Input id="libraryName" className="pl-9" placeholder="Central Library" value={form.libraryName} onChange={handleChange} />
                                 </div>
                                 {errors.libraryName && <p className="text-sm text-destructive">{errors.libraryName}</p>}
                             </div>
@@ -102,7 +99,7 @@ export default function Signup() {
                                 <Label htmlFor="totalSeats">Total Seats *</Label>
                                 <div className="relative">
                                     <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input id="totalSeats" type="number" min="1" className="pl-9 bg-white/50 dark:bg-black/20" placeholder="100" value={form.totalSeats} onChange={handleChange} />
+                                    <Input id="totalSeats" type="number" min="1" className="pl-9" placeholder="100" value={form.totalSeats} onChange={handleChange} />
                                 </div>
                                 {errors.totalSeats && <p className="text-sm text-destructive">{errors.totalSeats}</p>}
                             </div>
@@ -113,14 +110,14 @@ export default function Signup() {
                                 <Label htmlFor="address">Address</Label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input id="address" className="pl-9 bg-white/50 dark:bg-black/20" placeholder="123 Main St" value={form.address} onChange={handleChange} />
+                                    <Input id="address" className="pl-9" placeholder="123 Main St" value={form.address} onChange={handleChange} />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="city">City</Label>
                                 <div className="relative">
                                     <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input id="city" className="pl-9 bg-white/50 dark:bg-black/20" placeholder="New York" value={form.city} onChange={handleChange} />
+                                    <Input id="city" className="pl-9" placeholder="New York" value={form.city} onChange={handleChange} />
                                 </div>
                             </div>
                         </div>
@@ -141,7 +138,7 @@ export default function Signup() {
                                 <Label htmlFor="email">Owner Email *</Label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input id="email" type="email" className="pl-9 bg-white/50 dark:bg-black/20" placeholder="admin@library.com" value={form.email} onChange={handleChange} />
+                                    <Input id="email" type="email" className="pl-9" placeholder="admin@library.com" value={form.email} onChange={handleChange} />
                                 </div>
                                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                             </div>
@@ -149,13 +146,13 @@ export default function Signup() {
                                 <Label htmlFor="password">Password *</Label>
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input id="password" type="password" className="pl-9 bg-white/50 dark:bg-black/20" placeholder="••••••••" value={form.password} onChange={handleChange} />
+                                    <Input id="password" type="password" className="pl-9" placeholder="••••••••" value={form.password} onChange={handleChange} />
                                 </div>
                                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 transition-all duration-300 transform hover:scale-[1.01]" disabled={isSubmitting}>
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
