@@ -12,8 +12,10 @@ import { Users, DollarSign, TrendingUp, AlertCircle, LayoutDashboard } from "luc
 import {
   fetchDashboardSummary,
   fetchEstimatedFees,
+  fetchRevenueExpenses,
   type DashboardSummary,
   type EstimatedFees,
+  type RevenueExpensePoint,
 } from "@/lib/dashboard";
 
 const Index = () => {
@@ -21,18 +23,27 @@ const Index = () => {
   const [fees, setFees] = useState<EstimatedFees | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [revenueExpenses, setRevenueExpenses] = useState<RevenueExpensePoint[]>([]);
 
   // Fetch data from backend metrics API once component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
         setError(null);
-        const [summaryData, feesData] = await Promise.all([
+        const [summaryData, feesData, revenueExpensesData] = await Promise.all([
           fetchDashboardSummary(),
           fetchEstimatedFees(),
+          fetchRevenueExpenses(6),
         ]);
         setSummary(summaryData);
         setFees(feesData);
+        setRevenueExpenses(
+          revenueExpensesData.map((p) => ({
+            month: p.label,
+            revenue: p.revenue,
+            expenses: p.expenses,
+          })),
+        );
       } catch (e: any) {
         console.error("Dashboard data fetch error:", e);
         const msg =
@@ -78,10 +89,17 @@ const Index = () => {
           onClick={() => {
             setLoading(true);
             setError(null);
-            Promise.all([fetchDashboardSummary(), fetchEstimatedFees()])
-              .then(([s, f]) => {
+            Promise.all([fetchDashboardSummary(), fetchEstimatedFees(), fetchRevenueExpenses(6)])
+              .then(([s, f, re]) => {
                 setSummary(s);
                 setFees(f);
+                setRevenueExpenses(
+                  re.map((p) => ({
+                    month: p.label,
+                    revenue: p.revenue,
+                    expenses: p.expenses,
+                  })),
+                );
               })
               .catch((e) =>
                 setError(

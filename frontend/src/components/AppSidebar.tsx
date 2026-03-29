@@ -95,6 +95,7 @@ const menuGroups = [
         children: [
           { title: "Pending Fees", url: "/revenue/pending", icon: CreditCard },
           { title: "Renew Membership", url: "/renew", icon: CreditCard },
+          { title: "Record Expense", url: "/expenses", icon: Banknote },
         ],
       },
     ],

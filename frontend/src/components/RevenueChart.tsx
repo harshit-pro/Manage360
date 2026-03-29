@@ -10,24 +10,37 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { month: "Jan", revenue: 45000, expenses: 32000 },
-  { month: "Feb", revenue: 52000, expenses: 35000 },
-  { month: "Mar", revenue: 48000, expenses: 33000 },
-  { month: "Apr", revenue: 61000, expenses: 38000 },
-  { month: "May", revenue: 55000, expenses: 36000 },
-  { month: "Jun", revenue: 67000, expenses: 40000 },
-];
+type RevenueChartPoint = {
+  month: string;
+  revenue: number;
+  expenses: number;
+};
 
-export function RevenueChart() {
+interface RevenueChartProps {
+  data: RevenueChartPoint[];
+}
+
+export function RevenueChart({ data }: RevenueChartProps) {
+  const hasData = data && data.length > 0;
+
+  const chartData = hasData
+    ? data
+    : [{ month: "No data", revenue: 0, expenses: 0 }];
+
   return (
     <Card className="shadow-md animate-fade-in">
       <CardHeader>
         <CardTitle>Monthly Revenue vs Expenses</CardTitle>
       </CardHeader>
       <CardContent>
+        {!hasData && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            No revenue/expense records yet. Add expenses and record payments to
+            see this chart.
+          </p>
+        )}
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
