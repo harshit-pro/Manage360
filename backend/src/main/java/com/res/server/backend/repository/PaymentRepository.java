@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
@@ -49,4 +50,30 @@ group by p.method
             Instant from,
             Instant to
     );
+
+    @Query("""
+select p
+from Payment p
+join fetch p.student s
+where p.library.id = :libraryId
+  and p.paidAt >= :from
+  and p.paidAt < :to
+  and p.type in :types
+order by p.paidAt desc
+""")
+    List<Payment> findMonthlyReportItems(
+            UUID libraryId,
+            Instant from,
+            Instant to,
+            List<com.res.server.backend.entity.enums.PaymentType> types
+    );
+
+    @Query("""
+select p
+from Payment p
+join fetch p.student s
+join fetch p.library l
+where p.id = :paymentId
+""")
+    Optional<Payment> findByIdWithStudentAndLibrary(UUID paymentId);
 }

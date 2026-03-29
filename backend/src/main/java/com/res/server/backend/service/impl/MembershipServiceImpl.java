@@ -68,6 +68,8 @@ public class MembershipServiceImpl implements MembershipService {
                 payment.setMethod(method);
                 payment.setPaidAt(Instant.now());
                 payment.setNote(note);
+                payment.setPeriodEnd(newActiveUntil);
+                payment.setPeriodStart(newActiveUntil.minusMonths(months));
 
                 paymentRepository.save(payment);
                 membershipRepository.save(membership);

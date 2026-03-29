@@ -2,7 +2,6 @@ package com.res.server.backend.entity;
 
 import com.res.server.backend.entity.enums.PaymentType;
 import jakarta.persistence.Entity;
-import com.res.server.backend.entity.enums.MembershipStatus;
 import com.res.server.backend.entity.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -46,4 +45,16 @@ public class Payment {
     private Instant paidAt;
     private String note;
     private String referenceId;
+
+    /**
+     * Coverage start date for membership-related payments.
+     * For one-time payments this may be null.
+     */
+    private LocalDate periodStart;
+
+    /**
+     * Coverage end date for membership-related payments.
+     * For one-time payments this may be null.
+     */
+    private LocalDate periodEnd;
 }

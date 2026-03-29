@@ -41,6 +41,9 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPaidAt(Instant.now());
         payment.setNote(note);
         payment.setReferenceId(referenceId);
+        // One-time seasonal fee payment: no coverage period.
+        payment.setPeriodStart(null);
+        payment.setPeriodEnd(null);
         paymentRepository.save(payment);
         studentRepository.save(student);
         return payment.getId();
