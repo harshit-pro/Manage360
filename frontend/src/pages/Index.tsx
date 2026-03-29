@@ -15,15 +15,20 @@ import {
   fetchRevenueExpenses,
   type DashboardSummary,
   type EstimatedFees,
-  type RevenueExpensePoint,
 } from "@/lib/dashboard";
+
+type RevenueChartPoint = {
+  month: string;
+  revenue: number;
+  expenses: number;
+};
 
 const Index = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [fees, setFees] = useState<EstimatedFees | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [revenueExpenses, setRevenueExpenses] = useState<RevenueExpensePoint[]>([]);
+  const [revenueExpenses, setRevenueExpenses] = useState<RevenueChartPoint[]>([]);
 
   // Fetch data from backend metrics API once component mounts
   useEffect(() => {
@@ -152,7 +157,7 @@ const Index = () => {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <RevenueChart />
+          <RevenueChart data={revenueExpenses} />
         </div>
         <div className="space-y-6">
           <FeeEstimationPanel estimated={estimatedFee} collected={collectedFee} />

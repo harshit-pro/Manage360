@@ -13,6 +13,7 @@ import RenewMembership from "./pages/RenewMembership";
 import StudentsHub from "./pages/StudentsHub";
 import PendingFees from "./pages/PendingFees";
 import Expenses from "./pages/Expenses";
+import MonthlySummary from "./pages/MonthlySummary";
 import NotFound from "./pages/NotFound";
 
 // Layout & auth
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/students/new" element={<Navigate to="/students?tab=add" replace />} />
               <Route path="/revenue/pending" element={<PendingFees />} />
               <Route path="/expenses" element={<Expenses />} />
+              <Route path="/reports/monthly" element={<MonthlySummary />} />
             </Route>
           </Route>
 
