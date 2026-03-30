@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
-import { listStudents, searchStudents, Student, renewMembership, paySeasonalFee, membershipMonthsFromDeposit } from "@/lib/students";
+import { listStudents, searchStudents, Student, renewMembership, membershipMonthsFromDeposit } from "@/lib/students";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -112,12 +112,6 @@ export default function RenewMembership() {
         }
         setRenewingIds((prev) => new Set(prev).add(student.id));
         try {
-            await paySeasonalFee({
-                studentId: student.id,
-                amount: deposit,
-                paymentMethod: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-                note: "Renewal payment",
-            });
             await renewMembership(student.id, {
                 months,
                 amount: deposit,
@@ -192,12 +186,6 @@ export default function RenewMembership() {
             return;
         }
         try {
-            await paySeasonalFee({
-                studentId: foundStudent.id,
-                amount: deposit,
-                paymentMethod: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-                note: note || "Renewal payment",
-            });
             const updated = await renewMembership(foundStudent.id, {
                 months: monthsNum,
                 amount: deposit,
