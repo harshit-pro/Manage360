@@ -52,7 +52,7 @@ group by p.method
     );
 
     @Query("""
-select p
+select distinct p
 from Payment p
 join fetch p.student s
 where p.library.id = :libraryId

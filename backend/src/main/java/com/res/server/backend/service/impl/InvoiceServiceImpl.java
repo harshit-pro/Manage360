@@ -284,9 +284,32 @@ public class InvoiceServiceImpl implements InvoiceService {
                 cs.stroke();
 
                 y -= 20;
-                String paymentType = payment.getType() != null
-                        ? payment.getType().name().replace("_", " ")
-                        : "";
+                String paymentType = "";
+                if (payment.getType() != null) {
+                    if (payment.getType() == com.res.server.backend.entity.enums.PaymentType.MEMBERSHIP_RENEWAL) {
+                        boolean isNewStudent = false;
+                        if (payment.getNote() != null && payment.getNote().toLowerCase().contains("initial enrollment")) {
+                            isNewStudent = true;
+                        } else if (payment.getPeriodStart() != null && student.getDateOfJoining() != null
+                                && payment.getPeriodStart().equals(student.getDateOfJoining())) {
+                            isNewStudent = true;
+                        }
+                        paymentType = isNewStudent ? "Initial Enrollment" : "Membership Renewal";
+                    } else if (payment.getType() == com.res.server.backend.entity.enums.PaymentType.SEASONAL_FEE) {
+                        paymentType = "Seasonal Fee";
+                    } else {
+                        // Title case formatting
+                        String raw = payment.getType().name().replace("_", " ").toLowerCase();
+                        String[] words = raw.split(" ");
+                        StringBuilder sb = new StringBuilder();
+                        for (String w : words) {
+                            if (w.length() > 0) {
+                                sb.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1)).append(" ");
+                            }
+                        }
+                        paymentType = sb.toString().trim();
+                    }
+                }
                 drawLabelValue(cs, fontRegular, fontBold, margin, y, "Type", paymentType);
                 y -= 18;
                 String paymentMethod = payment.getMethod() != null

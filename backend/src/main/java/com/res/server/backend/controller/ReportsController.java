@@ -61,7 +61,8 @@ public class ReportsController {
                     s.getRegNo(),
                     s.getSeatNo(),
                     s.getDateOfJoining(),
-                    s.getMobileNo()
+                    s.getMobileNo(),
+                    p.getNote()
             );
         }).toList();
     }

@@ -22,11 +22,13 @@ public class MonthlyPaymentItemResponse {
     private LocalDate periodStart;
     private LocalDate periodEnd;
 
+
     private UUID studentId;
     private String studentName;
     private String regNo;
     private String seatNo;
     private LocalDate dateOfJoining;
     private String mobileNo;
+    private String note;
 }
 
