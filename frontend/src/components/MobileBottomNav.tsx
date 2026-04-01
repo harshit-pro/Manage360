@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, Wallet, Menu } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, BarChart2, Menu } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +7,7 @@ const items = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard, match: (p: string) => p === "/dashboard" },
   { to: "/students", label: "Students", icon: Users, match: (p: string) => p.startsWith("/students") },
   { to: "/renew", label: "Renew", icon: CreditCard, match: (p: string) => p.startsWith("/renew") },
-  { to: "/revenue/pending", label: "Fees", icon: Wallet, match: (p: string) => p.startsWith("/revenue") },
+  { to: "/reports/monthly", label: "Summary", icon: BarChart2, match: (p: string) => p.startsWith("/reports") },
 ] as const;
 
 /**
