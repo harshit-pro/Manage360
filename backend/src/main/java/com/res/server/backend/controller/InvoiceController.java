@@ -37,8 +37,8 @@ public class InvoiceController {
         byte[] pdf = invoiceService.generateInvoicePdf(paymentId);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(ContentDisposition.attachment()
+        headers.setContentType(MediaType.APPLICATION_PDF); // Set content type to PDF
+        headers.setContentDisposition(ContentDisposition.attachment() // Force download with a default filename
                 .filename("invoice-" + paymentId + ".pdf")
                 .build());
 

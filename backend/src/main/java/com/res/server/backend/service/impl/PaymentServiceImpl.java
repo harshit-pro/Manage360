@@ -1,5 +1,6 @@
 package com.res.server.backend.service.impl;
 
+import com.res.server.backend.dto.response.MonthlyPaymentItemResponse;
 import com.res.server.backend.entity.Payment;
 import com.res.server.backend.entity.Student;
 import com.res.server.backend.entity.enums.PaymentMethod;
@@ -31,7 +32,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         student.setFeesDeposited(student.getFeesDeposited() + amount);
 
-
         Payment payment = new Payment();
         payment.setLibrary(student.getLibrary());
         payment.setStudent(student);
@@ -47,5 +47,34 @@ public class PaymentServiceImpl implements PaymentService {
         paymentRepository.save(payment);
         studentRepository.save(student);
         return payment.getId();
+    }
+
+    @Override
+    public MonthlyPaymentItemResponse getPaymentDetails(UUID paymentId) {
+        UUID libraryId = LibraryContext.getLibraryId();
+        Payment payment = paymentRepository.findByIdWithStudentAndLibrary(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+
+        if (!payment.getLibrary().getId().equals(libraryId)) {
+            throw new IllegalArgumentException("Access denied");
+        }
+
+        Student s = payment.getStudent();
+        return new MonthlyPaymentItemResponse(
+                payment.getId(),
+                payment.getType(),
+                payment.getMethod(),
+                payment.getAmount(),
+                payment.getPaidAt(),
+                payment.getPeriodStart(),
+                payment.getPeriodEnd(),
+                s.getId(),
+                s.getName(),
+                s.getRegNo(),
+                s.getSeatNo(),
+                s.getDateOfJoining(),
+                s.getMobileNo(),
+                payment.getNote()
+        );
     }
 }

@@ -32,12 +32,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final PaymentRepository paymentRepository;
     private final LibraryRepository libraryRepository;
 
-    private static final Color TEAL        = new Color(15, 118, 110);   // primary brand
-    private static final Color DARK_TEXT   = new Color(30, 41, 59);
-    private static final Color GRAY_TEXT   = new Color(100, 116, 139);
-    private static final Color LIGHT_BG    = new Color(240, 253, 250);  // very light teal
+    private static final Color TEAL = new Color(15, 118, 110); // primary brand
+    private static final Color DARK_TEXT = new Color(30, 41, 59);
+    private static final Color GRAY_TEXT = new Color(100, 116, 139);
+    private static final Color LIGHT_BG = new Color(240, 253, 250); // very light teal
     private static final Color BORDER_GRAY = new Color(226, 232, 240);
-    private static final Color WHITE       = new Color(255, 255, 255);
+    private static final Color WHITE = new Color(255, 255, 255);
 
     @Override
     @Transactional(readOnly = true)
@@ -76,7 +76,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             periodFrom = payment.getPeriodStart().format(dateFmt);
             periodTo = payment.getPeriodEnd().format(dateFmt);
             long months = ChronoUnit.MONTHS.between(payment.getPeriodStart(), payment.getPeriodEnd());
-            if (months <= 0) months = 1;
+            if (months <= 0)
+                months = 1;
             durationLabel = months + (months == 1 ? " Month" : " Months");
         }
 
@@ -288,7 +289,8 @@ public class InvoiceServiceImpl implements InvoiceService {
                 if (payment.getType() != null) {
                     if (payment.getType() == com.res.server.backend.entity.enums.PaymentType.MEMBERSHIP_RENEWAL) {
                         boolean isNewStudent = false;
-                        if (payment.getNote() != null && payment.getNote().toLowerCase().contains("initial enrollment")) {
+                        if (payment.getNote() != null
+                                && payment.getNote().toLowerCase().contains("initial enrollment")) {
                             isNewStudent = true;
                         } else if (payment.getPeriodStart() != null && student.getDateOfJoining() != null
                                 && payment.getPeriodStart().equals(student.getDateOfJoining())) {
@@ -380,10 +382,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
     }
 
-    /** Helper: draws "Label:   Value" pair at given position */
+    /** Helper: draws "Label: Value" pair at given position */
     private void drawLabelValue(PDPageContentStream cs, PDType1Font fontRegular,
-                                PDType1Font fontBold, float x, float y,
-                                String label, String value) throws java.io.IOException {
+            PDType1Font fontBold, float x, float y,
+            String label, String value) throws java.io.IOException {
         cs.beginText();
         cs.setFont(fontRegular, 10);
         cs.setNonStrokingColor(GRAY_TEXT);
