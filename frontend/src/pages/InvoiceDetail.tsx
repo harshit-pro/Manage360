@@ -227,9 +227,16 @@ const InvoiceDetail = () => {
                       <td className="px-6 py-8">
                         <div className="flex flex-col gap-1.5">
                           <span className="text-base font-bold text-slate-900">
-                            {payment.type === "MEMBERSHIP_RENEWAL" ? "Membership Renewal Fee" : 
-                             payment.type === "SEASONAL_FEE" ? "Seasonal Administration Fee" : 
-                             "Professional Services"}
+                            {(() => {
+                              if (payment.type === "SEASONAL_FEE") return "Seasonal Administration Fee";
+                              if (payment.type === "MEMBERSHIP_RENEWAL") {
+                                const isInitial = 
+                                  payment.note?.toLowerCase().includes("initial enrollment") || 
+                                  (payment.periodStart && payment.dateOfJoining && payment.periodStart === payment.dateOfJoining);
+                                return isInitial ? "Initial Enrollment Fee" : "Membership Renewal Fee";
+                              }
+                              return "Professional Services";
+                            })()}
                           </span>
                           {payment.periodStart && payment.periodEnd && (
                             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
