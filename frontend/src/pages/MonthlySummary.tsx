@@ -94,17 +94,38 @@ function getMethodIcon(method: string) {
   }
 }
 
-function getTypeBadge(type: string, compact = false) {
-  const isRenewal = type === "MEMBERSHIP_RENEWAL";
+function getTypeBadge(it: MonthlyPaymentItem, compact = false) {
+  const isNewStudent =
+    it.type === "MEMBERSHIP_RENEWAL" &&
+    (it.note?.toLowerCase().includes("initial enrollment") ||
+      (it.periodStart &&
+        it.dateOfJoining &&
+        it.periodStart === it.dateOfJoining));
+
+  const isRenewal = it.type === "MEMBERSHIP_RENEWAL" && !isNewStudent;
+
+  let colorClasses: string;
+  let label: string;
+
+  if (isNewStudent) {
+    colorClasses =
+      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 hover:bg-blue-100";
+    label = "New Student";
+  } else if (isRenewal) {
+    colorClasses =
+      "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 hover:bg-emerald-100";
+    label = "Renewal";
+  } else {
+    colorClasses =
+      "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 hover:bg-amber-100";
+    label = "Seasonal";
+  }
+
   return (
     <Badge
-      className={`${
-        isRenewal
-          ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 hover:bg-emerald-100"
-          : "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 hover:bg-amber-100"
-      } ${compact ? "text-[10px] px-1.5 py-0" : "text-[11px]"} font-semibold`}
+      className={`${colorClasses} ${compact ? "text-[10px] px-1.5 py-0" : "text-[11px]"} font-semibold`}
     >
-      {isRenewal ? "Renewal" : "Seasonal"}
+      {label}
     </Badge>
   );
 }
@@ -507,9 +528,6 @@ const MonthlySummary = () => {
                             Reg / Seat
                           </TableHead>
                           <TableHead className="font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
-                            Period
-                          </TableHead>
-                          <TableHead className="font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
                             Type
                           </TableHead>
                           <TableHead>
@@ -568,24 +586,7 @@ const MonthlySummary = () => {
                                 </p>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              {it.periodStart && it.periodEnd ? (
-                                <div className="flex items-center gap-1.5 text-xs">
-                                  <span className="font-medium text-foreground">
-                                    {formatDateShort(it.periodStart)}
-                                  </span>
-                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                  <span className="font-medium text-foreground">
-                                    {formatDateShort(it.periodEnd)}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  —
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>{getTypeBadge(it.type)}</TableCell>
+                            <TableCell>{getTypeBadge(it)}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-sm font-bold text-foreground">
@@ -697,16 +698,8 @@ const MonthlySummary = () => {
 
                             {/* Row 2: Period + Type + Method badges */}
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              {getTypeBadge(it.type, true)}
+                              {getTypeBadge(it, true)}
                               {getMethodBadge(it.method)}
-                              {it.periodStart && it.periodEnd && (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium text-primary dark:bg-primary/10">
-                                  <Clock className="h-2.5 w-2.5" />
-                                  {formatDateShort(it.periodStart)}{" "}
-                                  <ArrowRight className="h-2 w-2" />{" "}
-                                  {formatDateShort(it.periodEnd)}
-                                </span>
-                              )}
                             </div>
 
                             {/* Row 3: Payment date + Actions */}

@@ -14,6 +14,7 @@ export type MonthlyPaymentItem = {
   seatNo?: string | null;
   dateOfJoining?: string | null; // yyyy-MM-dd
   mobileNo?: string | null;
+  note?: string | null;
 };
 
 export async function fetchMonthlyReport(year: number, month: number): Promise<MonthlyPaymentItem[]> {
