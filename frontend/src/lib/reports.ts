@@ -31,3 +31,8 @@ export async function fetchInvoicePdf(paymentId: string): Promise<Blob> {
   return res.data as Blob;
 }
 
+export async function fetchPaymentDetails(paymentId: string): Promise<MonthlyPaymentItem> {
+  const res = await api.get(`/payments/${paymentId}`);
+  return res.data;
+}
+

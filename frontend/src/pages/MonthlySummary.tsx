@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart2,
   FileDown,
@@ -142,6 +143,7 @@ function getMethodBadge(method: string) {
 /* ── Component ─────────────────────────────────────────────── */
 
 const MonthlySummary = () => {
+  const navigate = useNavigate();
   const [monthValue, setMonthValue] = useState(monthInputValue());
   const [items, setItems] = useState<MonthlyPaymentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,26 +259,8 @@ const MonthlySummary = () => {
     }
   };
 
-  const handleInvoice = async (paymentId: string) => {
-    try {
-      setDownloadingId(paymentId);
-      const blob = await fetchInvoicePdf(paymentId);
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (err: any) {
-      console.error("Invoice download failed", err);
-      toast({
-        variant: "destructive",
-        title: "Invoice not available",
-        description:
-          err?.response?.data?.message ||
-          err?.message ||
-          "Failed to download invoice. Please try again.",
-      });
-    } finally {
-      setDownloadingId(null);
-    }
+  const handleInvoice = (paymentId: string) => {
+    navigate(`/invoices/${paymentId}`);
   };
 
   /* ── Render ─── */
