@@ -8,6 +8,11 @@ import java.util.List;
 
 @Configuration
 public class CorsConfig {
+    // Cors is Cross-Origin Resource Sharing, it allows the frontend
+    // (which is running on a different origin) to access the backend APIs
+    // Real life example: frontend is running on http://localhost:5173 and
+    // backend is running on http://localhost:8080, without CORS configuration,
+    // the browser will block the requests from frontend to backend due to same-origin policy
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

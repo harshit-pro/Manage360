@@ -14,5 +14,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
             LocalDate from,
             LocalDate to
     );
+
+    List<Expense> findByLibrary_IdOrderBySpentAtDesc(UUID libraryId);
 }
 

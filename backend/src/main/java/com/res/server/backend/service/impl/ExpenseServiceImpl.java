@@ -1,6 +1,7 @@
 package com.res.server.backend.service.impl;
 
 import com.res.server.backend.dto.request.CreateExpenseRequest;
+import com.res.server.backend.dto.response.ExpenseResponse;
 import com.res.server.backend.entity.Expense;
 import com.res.server.backend.entity.Library;
 import com.res.server.backend.repository.ExpenseRepository;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,24 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         Expense saved = expenseRepository.save(expense);
         return saved.getId();
+    }
+
+    @Override
+    public List<ExpenseResponse> getRecentExpenses() {
+        UUID libraryId = LibraryContext.getLibraryId();
+        if (libraryId == null) {
+            return List.of();
+        }
+
+        return expenseRepository.findByLibrary_IdOrderBySpentAtDesc(libraryId).stream()
+                .map(e -> new ExpenseResponse(
+                        e.getId(),
+                        e.getAmount().doubleValue(),
+                        e.getCategory(),
+                        e.getNote(),
+                        e.getSpentAt()
+                ))
+                .collect(Collectors.toList());
     }
 }
 
