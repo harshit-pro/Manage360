@@ -4,6 +4,15 @@
 import api from "./api";
 import { addMonths } from "date-fns";
 
+/** Metadata for a student used in demo data/persistence */
+export interface StudentMeta {
+    guardianName?: string;
+    isEnrolled?: boolean;
+    seasonalFees?: number;
+    feesDeposited?: number;
+    currentValidityMonths?: number; // Critical for enforcing user-requested validity logic
+}
+
 export interface Student {
     id: string;
     regNo: string;
@@ -28,60 +37,64 @@ export interface Student {
         status?: string;         // "ACTIVE" | "EXPIRED" | "PENDING"
         lastPaymentMethod?: string;
     };
+    meta?: StudentMeta;       // Client-side metadata
+}
+
+const STUDENT_META_KEY = "cl.studentMeta";
+
+/** Ensure metadata exists for a given student and return it */
+export function ensureMeta(studentId: string, index: number = 0): StudentMeta {
+    const allMeta: Record<string, StudentMeta> = JSON.parse(localStorage.getItem(STUDENT_META_KEY) || "{}");
+    if (!allMeta[studentId]) {
+        allMeta[studentId] = {};
+    }
+    const meta = allMeta[studentId];
+    if (index !== undefined && !meta.guardianName) {
+        meta.guardianName = `Guardian-${index}`;
+    }
+    localStorage.setItem(STUDENT_META_KEY, JSON.stringify(allMeta));
+    return meta;
+}
+
+/** Set or update metadata for a student */
+export function setStudentMeta(studentId: string, updates: Partial<StudentMeta>) {
+    const allMeta: Record<string, StudentMeta> = JSON.parse(localStorage.getItem(STUDENT_META_KEY) || "{}");
+    const existing = allMeta[studentId] || {};
+    allMeta[studentId] = { ...existing, ...updates };
+    localStorage.setItem(STUDENT_META_KEY, JSON.stringify(allMeta));
 }
 
 /** Normalize raw backend response: flatten membership fields for easy component access.
- *  Re-anchors activeUntil to dateOfJoining so the expiry always falls on the
- *  same day-of-month as the joining date (consistent monthly cycle). */
+ *  Enforces consistent validity based on the 'current payment' span stored in metadata. */
 function normalizeStudent(raw: any): Student {
     const m = raw.membership;
     let activeUntil: string | undefined = m?.activeUntil ?? raw.activeUntil;
 
-    // Re-anchor activeUntil to the student's dateOfJoining.
-    // The backend may calculate the expiry from "now" instead of from the joining date,
-    // resulting in a 1-day (or more) offset. We derive the intended whole-month duration
-    // and recompute from dateOfJoining.
+    // Fetch client-side metadata to check for manual validity overrides
+    const meta = ensureMeta(raw.id);
     const doj: string | undefined = raw.dateOfJoining;
-    if (activeUntil && doj) {
+
+    // RULE: If we have an explicit validity span in metadata (from a fresh payment/re-admission),
+    // we use it to calculate the expiry strictly from the Joining Date.
+    if (doj && meta.currentValidityMonths && meta.currentValidityMonths > 0) {
         try {
-            // Parse date-only parts as local dates to avoid timezone day-shifts
             const [jy, jm, jd] = doj.slice(0, 10).split("-").map(Number);
             const joining = new Date(jy, jm - 1, jd);
-
-            const [ey, em, ed] = activeUntil.slice(0, 10).split("-").map(Number);
-            const expiry = new Date(ey, em - 1, ed);
-
-            // Derive whole-month count (mirroring ChronoUnit.MONTHS.between)
-            let months = (ey - jy) * 12 + (em - jm);
-            if (ed < jd) months = Math.max(months - 1, 0);
-            if (months <= 0 && expiry > joining) months = 1;
-
-            if (months > 0) {
-                // addMonths handles end-of-month correctly (Jan 31 + 1 → Feb 28)
-                const corrected = addMonths(joining, months);
-                // Store as local ISO string (no "Z") so format() displays the right day
-                const pad = (n: number) => String(n).padStart(2, "0");
-                activeUntil = `${corrected.getFullYear()}-${pad(corrected.getMonth() + 1)}-${pad(corrected.getDate())}T00:00:00`;
-            }
-        } catch {
-            // keep original on parse failure
-        }
+            const derivedExpiry = addMonths(joining, meta.currentValidityMonths);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            activeUntil = `${derivedExpiry.getFullYear()}-${pad(derivedExpiry.getMonth() + 1)}-${pad(derivedExpiry.getDate())}T00:00:00`;
+        } catch { }
     }
 
-    // Determine expiry: always cross-check activeUntil date against today,
-    // because the backend's membership.status can be stale ("ACTIVE" even after the date passed).
     const now = new Date();
-    // Strip time from "now" so a membership expiring today (midnight) is still considered active for the day
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const dateExpired = activeUntil ? new Date(activeUntil) < todayStart : true;
     const backendSaysExpired = m ? m.status === "EXPIRED" : raw.isExpired;
 
-    // Expired if EITHER the backend says so OR the activeUntil date has passed
-    const isExpired: boolean = backendSaysExpired || dateExpired;
-    return { ...raw, activeUntil, isExpired, membership: m };
+    return { ...raw, activeUntil, isExpired: backendSaysExpired || dateExpired, membership: m, meta };
 }
 
-/** Fetch a single student by ID (with fresh membership state) */
+/** Fetch a single student by ID */
 export async function getStudent(studentId: string): Promise<Student> {
     const response = await api.get(`/students/${studentId}`);
     return normalizeStudent(response.data);
@@ -132,140 +145,64 @@ export async function toggleEnrollment(studentId: string, enroll: boolean): Prom
     await api.patch(`/students/${studentId}/enrollment?isEnrolled=${enroll}`);
 }
 
-/** Update student details (partial update).
- *  Re-fetches the student after saving to ensure the response includes
- *  the recalculated membership state (activeUntil / status). */
-export async function updateStudent(studentId: string, payload: {
-    name?: string;
-    seatNo?: string;
-    mobileNo?: string;
-    address?: string;
-    aadharNo?: string;
-    guardianName?: string;
-    guardianMobile?: string;
-    gender?: string;
-    dateOfJoining?: string;
-    seasonalFees?: number;
-}): Promise<Student> {
+/** Update student details */
+export async function updateStudent(studentId: string, payload: any): Promise<Student> {
     await api.put(`/students/${studentId}`, payload);
-    // Explicitly re-fetch to pick up the recalculated membership / activeUntil
-    const fresh = await getStudent(studentId);
-    return fresh;
+    return await getStudent(studentId);
 }
 
-/**
- * Number of membership months implied by a seasonal fee rate and amount deposited,
- * when the deposit is a whole multiple (e.g. seasonal 500 + deposit 1500 → 3).
- * Returns null if seasonal < 1, deposit is below one period, or not an exact multiple.
- */
-export function membershipMonthsFromDeposit(seasonalFees: number, feesDeposited: number): number | null {
-    if (seasonalFees < 1 || feesDeposited < seasonalFees) return null;
-    if (feesDeposited % seasonalFees !== 0) return null;
-    return feesDeposited / seasonalFees;
-}
-
-/** Renew membership for a student.
- *  Passes dateOfJoining so the backend can anchor the new expiry to the
- *  student's joining-date cycle when the membership is expired. */
-export async function renewMembership(studentId: string, payload: {
-    months: number;
-    amount: number;
-    method: "CASH" | "UPI" | "CARD";
-    note?: string;
-    dateOfJoining?: string;
-}): Promise<Student> {
+/** Renew membership for a student */
+export async function renewMembership(studentId: string, payload: any): Promise<Student> {
     await api.post(`/memberships/${studentId}/renew`, payload);
-    // Re-fetch to return the student with updated membership state
-    const fresh = await getStudent(studentId);
-    return fresh;
+    return await getStudent(studentId);
 }
 
-/** Pay seasonal fees */
+/** Utility to derive months from deposit */
+export function membershipMonthsFromDeposit(seasonal: number, deposit: number): number | null {
+    if (seasonal < 1 || deposit < seasonal) return null;
+    if (deposit % seasonal !== 0) return null;
+    return deposit / seasonal;
+}
+
+/** Record payment for seasonal fees */
 export async function paySeasonalFee(payload: {
     studentId: string;
     amount: number;
     paymentMethod: "CASH" | "UPI" | "CARD";
-    note?: string;
-    referenceId?: string;
 }): Promise<void> {
-    const data = { ...payload, method: payload.paymentMethod };
-    await api.post(`/payments/seasonal`, data);
-}
-
-// ====================
-// Additional student helpers used by the UI
-// ====================
-
-/** Metadata for a student used in demo data */
-export interface StudentMeta {
-    guardianName?: string;
-    isEnrolled?: boolean;
-    seasonalFees?: number;
-    feesDeposited?: number;
-    // add other fields as needed
-}
-
-const STUDENT_META_KEY = "cl.studentMeta";
-
-/** Ensure metadata exists for a given student and return it */
-export function ensureMeta(studentId: string, index: number = 0): StudentMeta {
-    const allMeta: Record<string, StudentMeta> = JSON.parse(localStorage.getItem(STUDENT_META_KEY) || "{}");
-    if (!allMeta[studentId]) {
-        allMeta[studentId] = {};
-    }
-    const meta = allMeta[studentId];
-    // optionally pre‑populate some defaults based on index
-    if (index !== undefined) {
-        meta.guardianName = meta.guardianName ?? `Guardian-${index}`;
-    }
-    localStorage.setItem(STUDENT_META_KEY, JSON.stringify(allMeta));
-    return meta;
-}
-
-/** Set or update metadata for a student */
-export function setStudentMeta(studentId: string, updates: Partial<StudentMeta>) {
-    const allMeta: Record<string, StudentMeta> = JSON.parse(localStorage.getItem(STUDENT_META_KEY) || "{}");
-    const existing = allMeta[studentId] || {};
-    allMeta[studentId] = { ...existing, ...updates };
-    localStorage.setItem(STUDENT_META_KEY, JSON.stringify(allMeta));
-}
-
-/** Alias for listing all students (used by UI) */
-export const listStudents = listAllStudents;
-
-/** Simple client‑side search over all students */
-export async function searchStudents(query: string): Promise<Student[]> {
-    const all = await listAllStudents();
-    if (!Array.isArray(all)) return [];
-    const lower = query.toLowerCase();
-    return all.filter((s) => s.name.toLowerCase().includes(lower) || s.id.toLowerCase().includes(lower));
+    await api.post(`/students/${payload.studentId}/pay-seasonal-fee`, payload);
 }
 
 /** View type combining student data with its metadata */
 export type StudentView = Student & { meta?: StudentMeta };
 
-/** Generate next registration number (simple increment, 3-digit numeric part) */
+/** Simple client‑side search over all students */
+export async function searchStudents(query: string): Promise<Student[]> {
+    const all = await listAllStudents();
+    const lower = query.toLowerCase();
+    return all.filter((s) => s.name.toLowerCase().includes(lower) || s.id.toLowerCase().includes(lower));
+}
+
+/** Generate next registration number */
 export async function nextRegNo(): Promise<string> {
     const all = await listAllStudents();
-    const safeAll = Array.isArray(all) ? all : [];
-    // Extract numeric suffix from regNo (e.g. "NL007" → 7, "0012" → 12)
-    const max = safeAll.reduce((m, s) => {
+    const max = all.reduce((m, s) => {
         const numMatch = (s.regNo || "").match(/(\d+)$/);
-        return numMatch ? Math.max(m, parseInt(numMatch[1], 10)) : m;
+        return numMatch ? Math.max(m, parseInt(numMatch[1])) : m;
     }, 0);
-    // Extract the alphabetic prefix from the last regNo (e.g. "NL" from "NL007")
-    const lastWithPrefix = safeAll.find(s => s.regNo && /^[A-Za-z]/.test(s.regNo));
-    const prefix = lastWithPrefix?.regNo?.match(/^([A-Za-z]+)/)?.[1] || "";
+    const lastWithPrefix = all.find(s => s.regNo && /^[A-Za-z]/.test(s.regNo));
+    const prefix = lastWithPrefix?.regNo?.match(/^([A-Za-z]+)/)?.[1] || "NL";
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
 }
 
 /** Generate next student code (e.g., S001) */
 export async function nextStudentCode(): Promise<string> {
     const all = await listAllStudents();
-    const safeAll = Array.isArray(all) ? all : [];
-    const max = safeAll.reduce((max, s) => {
+    const max = all.reduce((max, s) => {
         const match = s.id.match(/S(\d+)/);
         return match ? Math.max(max, parseInt(match[1])) : max;
     }, 0);
     return `S${String(max + 1).padStart(3, "0")}`;
 }
+
+export const listStudents = listAllStudents;

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit } from "@/lib/students";
+import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit, setStudentMeta } from "@/lib/students";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -73,12 +73,10 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     });
 
     useEffect(() => {
-        // default Date of joining as today (YYYY-MM-DD format)
         setValue("dateOfJoining", new Date().toISOString().slice(0, 10));
     }, [setValue]);
 
     useEffect(() => {
-        // Load next reg no
         nextRegNo().then((reg) => setValue("regNo", reg));
     }, [setValue]);
 
@@ -117,6 +115,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
     const onSubmit = async (data: NewStudentInput) => {
         try {
+            // 1. Create the student record with 0 initial deposit to avoid double-counting
             const student = await createStudent({
                 name: data.name.trim(),
                 seatNo: data.seatNo,
@@ -128,13 +127,15 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 guardianMobile: data.guardianMobile,
                 gender: data.gender.toUpperCase(),
                 seasonalFees: data.seasonalFees,
-                feesDeposited: data.feesDeposited,
+                feesDeposited: 0, // Explicitly 0 here
             });
 
-            if (data.membershipMonths > 0) {
+            // 2. Process the formal membership payment
+            if (data.feesDeposited > 0 || data.membershipMonths > 0) {
                 const seasonal = data.seasonalFees;
                 let months: number;
                 let amount: number;
+                
                 if (data.feesDeposited > 0) {
                     const m = membershipMonthsFromDeposit(seasonal, data.feesDeposited);
                     if (m === null) {
@@ -147,17 +148,22 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                     months = data.membershipMonths;
                     amount = seasonal * months;
                 }
+
                 await renewMembership(student.id, {
                     months,
                     amount,
                     method: data.paymentMethod && ["CASH", "UPI", "CARD"].includes(data.paymentMethod.toUpperCase())
                         ? (data.paymentMethod.toUpperCase() as "CASH" | "UPI" | "CARD")
                         : "CASH",
-                    note: "Initial Enrollment",
+                    note: "Initial Enrollment Payment",
+                    dateOfJoining: (data.dateOfJoining || new Date().toISOString()).slice(0, 10)
                 });
+
+                // Update metadata for accurate validity tracking in UI
+                setStudentMeta(student.id, { currentValidityMonths: months });
             }
 
-            toast({ title: "Registration Successful", description: `${data.name} is now a member.` });
+            toast({ title: "Registration Successful", description: `${data.name} is now a member with correct validity.` });
             nav(embedded ? "/students?tab=all" : "/students");
         } catch (e: any) {
             const message = e?.response?.data?.message || e.message || String(e);
@@ -167,8 +173,6 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
     return (
         <div className={cn("flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000", embedded && "pb-6")}>
-            
-            {/* Header / Hero Section */}
             {!embedded && (
               <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs">
@@ -180,9 +184,18 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Form Section (2/3 width) */}
+            {/* Mobile Preview */}
+            <div className="lg:hidden">
+              <RegistrationSummaryCard 
+                name={watchedName} 
+                seat={watchedSeat} 
+                joiningDate={watchedJoiningDate} 
+                months={resolvedMembershipMonths} 
+                activeUntil={activeUntilPreview} 
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <Card className="lg:col-span-2 rounded-[2.5rem] border-slate-200/60 shadow-2xl shadow-slate-200/40 bg-white/80 backdrop-blur-md overflow-hidden">
                     <CardHeader className="bg-slate-900 text-white p-8">
                         <CardTitle className="text-2xl font-bold flex items-center gap-3">
@@ -191,9 +204,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                         </CardTitle>
                         <CardDescription className="text-slate-400 font-medium italic">Complete the verified registration protocol below.</CardDescription>
                     </CardHeader>
-                    <CardContent className="p-8">
+                    <CardContent className="p-6 md:p-8">
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
-                            
                             {/* Personal Information */}
                             <section className="space-y-6">
                                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
@@ -217,7 +229,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Gender Specification</Label>
-                                        <Select defaultValue={defaults.gender} onValueChange={(v) => setValue("gender", v as any)}>
+                                        <Select defaultValue={"male"} onValueChange={(v) => setValue("gender", v as any)}>
                                             <SelectTrigger className="h-12 rounded-2xl border-slate-200 font-medium">
                                                 <SelectValue placeholder="Select" />
                                             </SelectTrigger>
@@ -238,7 +250,6 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                 </div>
                             </section>
 
-                            {/* Location & Guardians */}
                             <section className="space-y-6">
                                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                                     <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
@@ -263,7 +274,6 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                 </div>
                             </section>
 
-                            {/* Seat & Finance */}
                             <section className="space-y-6">
                                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                                     <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
@@ -295,18 +305,17 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                             onChange={(e) => setValue("dateOfJoining", `${e.target.value}T00:00:00Z`)}
                                         />
                                     </div>
-                                    
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Monthly Rate (₹)</Label>
                                         <Input type="number" className="h-12 rounded-2xl border-slate-200 font-black" {...register("seasonalFees", { valueAsNumber: true })} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Deposit Amount (₹)</Label>
+                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Admission Fee Submitted (₹)</Label>
                                         <Input type="number" className="h-12 rounded-2xl border-slate-200 font-black text-emerald-600" {...register("feesDeposited", { valueAsNumber: true })} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Payment Channel</Label>
-                                        <Select defaultValue={defaults.paymentMethod} onValueChange={(v) => setValue("paymentMethod", v as any)}>
+                                        <Select defaultValue={"cash"} onValueChange={(v) => setValue("paymentMethod", v as any)}>
                                             <SelectTrigger className="h-12 rounded-2xl border-slate-200 font-bold capitalize">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -341,81 +350,79 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                     </CardContent>
                 </Card>
 
-                {/* Live Preview / Sidebar (1/3 width) */}
-                <div className="space-y-6">
-                    <Card className="rounded-[2.5rem] border-emerald-100 bg-emerald-50/20 shadow-xl overflow-hidden sticky top-24">
-                        <CardHeader className="p-6 bg-emerald-600 text-white">
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                              <CheckCircle2 className="h-5 w-5" />
-                              Registration Summary
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6 space-y-6">
-                            
-                            <div className="flex flex-col items-center text-center p-4">
-                              <div className="h-20 w-20 rounded-[2rem] bg-white shadow-inner flex items-center justify-center text-3xl font-black text-emerald-600 mb-3 border border-emerald-100">
-                                {watchedName ? watchedName.charAt(0).toUpperCase() : "?"}
-                              </div>
-                              <h4 className="text-xl font-black text-slate-900 truncate w-full">{watchedName || "New Student"}</h4>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Preview Card</p>
-                            </div>
-
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between py-3 border-y border-emerald-100/50">
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1.5 rounded-lg bg-emerald-100/50">
-                                      <Hash className="h-3 w-3 text-emerald-600" />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-500">Seat Assignment</span>
-                                  </div>
-                                  <span className="text-sm font-black text-slate-800">{watchedSeat || "PENDING"}</span>
-                              </div>
-
-                              <div className="flex items-center justify-between py-3 border-b border-emerald-100/50">
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1.5 rounded-lg bg-emerald-100/50">
-                                      <Calendar className="h-3 w-3 text-emerald-600" />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-500">Start Date</span>
-                                  </div>
-                                  <span className="text-sm font-black text-slate-800">{watchedJoiningDate ? format(new Date(watchedJoiningDate), "dd MMM, yyyy") : "TBD"}</span>
-                              </div>
-
-                              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm space-y-3">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-slate-400 font-bold uppercase">Membership Period</span>
-                                  <Badge className="bg-emerald-500 text-white font-black px-3">{resolvedMembershipMonths} Month(s)</Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Valid Until</span>
-                                  <span className="text-base font-black text-emerald-600">
-                                    {activeUntilPreview ? format(activeUntilPreview, "dd MMM, yyyy") : "N/A"}
-                                  </span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                                  <div className="h-full bg-emerald-500 w-[60%]" />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex gap-3 items-start animate-pulse">
-                              <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                              <p className="text-[10px] leading-relaxed text-amber-800 font-medium">
-                                System will automatically generate a professional invoice and ID card upon successful completion of this registration.
-                              </p>
-                            </div>
-
-                        </CardContent>
-                    </Card>
-                    
+                {/* Desktop Summary Sidebar */}
+                <div className="hidden lg:block space-y-6">
+                    <div className="sticky top-24">
+                        <RegistrationSummaryCard 
+                            name={watchedName} 
+                            seat={watchedSeat} 
+                            joiningDate={watchedJoiningDate} 
+                            months={resolvedMembershipMonths} 
+                            activeUntil={activeUntilPreview} 
+                        />
+                    </div>
                     <div className="p-4 rounded-3xl border border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1 text-center">
                         <ShieldCheck className="h-6 w-6 text-slate-400" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Data Encryption</span>
                         <p className="text-[9px] text-slate-300">All student records are encrypted and stored in accordance with local data protection regulations.</p>
                     </div>
                 </div>
-
             </div>
         </div>
+    );
+}
+
+function RegistrationSummaryCard({ name, seat, joiningDate, months, activeUntil }: any) {
+    return (
+        <Card className="rounded-[2.5rem] border-emerald-100 bg-emerald-50/20 shadow-xl overflow-hidden">
+            <CardHeader className="p-6 bg-emerald-600 text-white">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Registration Summary
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+                <div className="flex flex-col items-center text-center p-4">
+                  <div className="h-20 w-20 rounded-[2rem] bg-white shadow-inner flex items-center justify-center text-3xl font-black text-emerald-600 mb-3 border border-emerald-100">
+                    {name ? name.charAt(0).toUpperCase() : "?"}
+                  </div>
+                  <h4 className="text-xl font-black text-slate-900 truncate w-full">{name || "New Student"}</h4>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Preview Card</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between py-3 border-y border-emerald-100/50">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-emerald-100/50">
+                          <Hash className="h-3 w-3 text-emerald-600" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500">Seat Assignment</span>
+                      </div>
+                      <span className="text-sm font-black text-slate-800">{seat || "PENDING"}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-emerald-100/50">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-emerald-100/50">
+                          <Calendar className="h-3 w-3 text-emerald-600" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500">Start Date</span>
+                      </div>
+                      <span className="text-sm font-black text-slate-800">{joiningDate ? format(new Date(joiningDate), "dd MMM, yyyy") : "TBD"}</span>
+                  </div>
+                  <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400 font-bold uppercase">Membership Period</span>
+                      <Badge className="bg-emerald-500 text-white font-black px-3">{months} Month(s)</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Valid Until</span>
+                      <span className="text-base font-black text-emerald-600">
+                        {activeUntil ? format(activeUntil, "dd MMM, yyyy") : "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

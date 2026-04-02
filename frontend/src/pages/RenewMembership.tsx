@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { format, addDays, isPast, differenceInDays } from "date-fns";
-import { listStudents, searchStudents, Student, renewMembership, membershipMonthsFromDeposit } from "@/lib/students";
+import { listStudents, searchStudents, Student, renewMembership, membershipMonthsFromDeposit, setStudentMeta } from "@/lib/students";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
@@ -135,6 +135,11 @@ export default function RenewMembership() {
 
         setRenewingIds((prev) => new Set(prev).add(student.id));
         try {
+            // SYNC LOCAL OVERRIDE: Update cumulative months for the strict validity logic if active
+            if (student.meta?.currentValidityMonths) {
+                setStudentMeta(student.id, { currentValidityMonths: student.meta.currentValidityMonths + months });
+            }
+
             await renewMembership(student.id, {
                 months,
                 amount: deposit,
@@ -193,6 +198,13 @@ export default function RenewMembership() {
         }
 
         try {
+            // SYNC LOCAL OVERRIDE: Update cumulative months for the strict validity logic if active
+            if (foundStudent.meta?.currentValidityMonths) {
+                setStudentMeta(foundStudent.id, { 
+                    currentValidityMonths: foundStudent.meta.currentValidityMonths + monthsNum 
+                });
+            }
+
             const updated = await renewMembership(foundStudent.id, {
                 months: monthsNum,
                 amount: deposit,

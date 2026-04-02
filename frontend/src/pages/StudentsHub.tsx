@@ -59,10 +59,10 @@ export default function StudentsHub() {
       <Tabs
         value={tab}
         onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}
-        className="w-full space-y-8"
+        className="w-full space-y-6 sm:space-y-8"
       >
-        <div className="flex items-center justify-center lg:justify-start">
-          <TabsList className="h-auto w-fit gap-2 rounded-[1.5rem] bg-slate-100/50 p-2 shadow-inner border border-slate-200/50 backdrop-blur-sm">
+        <div className="flex items-center lg:justify-start w-full overflow-x-auto scrollbar-hide pb-2">
+          <TabsList className="h-auto w-fit flex flex-nowrap gap-2 rounded-[1.5rem] bg-slate-100/50 p-2 shadow-inner border border-slate-200/50 backdrop-blur-sm min-w-max">
             {[
               { id: "add", label: "New Enrollment", icon: UserPlus },
               { id: "all", label: "Master List", icon: Users },
@@ -71,7 +71,7 @@ export default function StudentsHub() {
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className="group relative h-12 rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-widest transition-all data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-2xl sm:text-xs"
+                className="group relative h-12 rounded-2xl px-5 py-3 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-2xl whitespace-nowrap"
               >
                 <t.icon className="mr-2 h-4 w-4 shrink-0 transition-transform group-active:scale-90" aria-hidden />
                 <span className="relative z-10">{t.label}</span>

@@ -38,6 +38,7 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
     const [q, setQ] = useState("");
     const [selected, setSelected] = useState<Student | null>(null);
     const [editTarget, setEditTarget] = useState<Student | null>(null);
+    const [isReAdmission, setIsReAdmission] = useState(false);
     const [tick, setTick] = useState(0);
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
@@ -66,6 +67,13 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
     const activeCount = useMemo(() => students.filter(s => s.isEnrolled !== false).length, [students]);
 
     const handleToggleEnrollment = async (s: Student, checked: boolean) => {
+        // If we are activating a currently INACTIVE/ARCHIVED student
+        if (checked && s.isEnrolled === false) {
+            setEditTarget(s);
+            setIsReAdmission(true);
+            return;
+        }
+
         try {
             await toggleEnrollment(s.id, checked);
             setTick((t) => t + 1);
@@ -309,10 +317,17 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
             <EditStudentDialog
                 open={!!editTarget}
                 student={editTarget}
-                onOpenChange={(o) => !o && setEditTarget(null)}
+                isReAdmission={isReAdmission}
+                onOpenChange={(o) => {
+                  if (!o) {
+                    setEditTarget(null);
+                    setIsReAdmission(false);
+                  }
+                }}
                 onSaved={(updated) => {
                     setStudents((prev) => prev.map((s) => s.id === updated.id ? { ...s, ...updated } : s));
                     setEditTarget(null);
+                    setIsReAdmission(false);
                 }}
             />
         </div>

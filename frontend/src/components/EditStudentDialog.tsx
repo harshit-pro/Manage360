@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Save, CalendarClock, CheckCircle2 } from "lucide-react";
-import { format, addMonths, differenceInCalendarMonths, parseISO } from "date-fns";
-import { Student, updateStudent } from "@/lib/students";
+import { format, addMonths, parseISO } from "date-fns";
+import { Student, updateStudent, getStudent, toggleEnrollment, renewMembership, setStudentMeta } from "@/lib/students";
 
 const schema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -38,16 +38,16 @@ interface Props {
     student: Student | null;
     onOpenChange: (open: boolean) => void;
     onSaved: (updated: Student) => void;
+    isReAdmission?: boolean;
 }
 
-export default function EditStudentDialog({ open, student, onOpenChange, onSaved }: Props) {
+export default function EditStudentDialog({ open, student, onOpenChange, onSaved, isReAdmission = false }: Props) {
     const { toast } = useToast();
 
     const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<EditForm>({
         resolver: zodResolver(schema) as Resolver<EditForm>,
     });
 
-    // Populate form when student changes
     useEffect(() => {
         if (student) {
             reset({
@@ -59,38 +59,56 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 guardianName: student.guardianName || "",
                 guardianMobile: student.guardianMobile || "",
                 gender: (student.gender?.toUpperCase() as "MALE" | "FEMALE" | "OTHER") || "MALE",
-                dateOfJoining: student.dateOfJoining?.slice(0, 10) || "",
-                seasonalFees: student.seasonalFees ?? undefined,
-                feesDeposited: student.feesDeposited ?? undefined,
+                dateOfJoining: isReAdmission 
+                    ? new Date().toISOString().slice(0, 10) 
+                    : (student.dateOfJoining?.slice(0, 10) || ""),
+                seasonalFees: student.seasonalFees ?? 0,
+                // ALWAYS default to 0 for the "Current Payment" field.
+                // This ensures the user enters the fee for the CURRENT period/renewal.
+                feesDeposited: 0,
             });
         }
-    }, [student, reset]);
+    }, [student, reset, isReAdmission]);
 
     const watchedJoiningDate = watch("dateOfJoining");
     const watchedSeasonal = watch("seasonalFees") || 0;
     const watchedDeposited = watch("feesDeposited") || 0;
 
-    // Calculate live 'Membership Duration' and 'Active Until' preview
+    // VALIDITY CALCULATION: Derived ONLY from the current form input (New Payment)
     const durationInfo = (() => {
         if (!watchedJoiningDate || watchedSeasonal <= 0) return null;
-        
+        // The user specifically wants validity based ON THE CURRENTLY SUBMITTED FEES
         const months = Math.floor(watchedDeposited / watchedSeasonal);
         if (months <= 0) return null;
-
         try {
             const joining = parseISO(watchedJoiningDate);
             const activeUntil = addMonths(joining, months);
             return { months, activeUntil };
-        } catch {
-            return null;
-        }
+        } catch { return null; }
     })();
 
     const onSubmit = async (data: EditForm) => {
         if (!student) return;
+        const seasonal = Number(data.seasonalFees) || 0;
+        const deposited = Number(data.feesDeposited) || 0;
+        const joiningDate = data.dateOfJoining || new Date().toISOString().slice(0, 10);
+        const months = Math.floor(deposited / seasonal) || 1;
+
         try {
-            // Include feesDeposited in the update request
-            const updated = await updateStudent(student.id, {
+            // 0. Update cumulative session months for local validity override
+            if (isReAdmission) {
+               // Re-admission starts a fresh session with a reset Joining Date
+               setStudentMeta(student.id, { currentValidityMonths: months });
+            } else if (deposited > 0) {
+               // Normal payment/renewal adds to the existing session count
+               const existing = student.meta?.currentValidityMonths || 0;
+               if (existing > 0) {
+                   setStudentMeta(student.id, { currentValidityMonths: existing + months });
+               }
+            }
+
+            // 1. Update basic profile details (Name, Seat, etc.)
+            await updateStudent(student.id, {
                 name: data.name,
                 seatNo: data.seatNo,
                 mobileNo: data.mobileNo || undefined,
@@ -99,32 +117,51 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 guardianName: data.guardianName || undefined,
                 guardianMobile: data.guardianMobile || undefined,
                 gender: data.gender,
-                dateOfJoining: data.dateOfJoining || undefined,
-                seasonalFees: data.seasonalFees,
-                // We add this assuming the service and backend support it
-                ...({ feesDeposited: data.feesDeposited } as any)
+                seasonalFees: seasonal,
+                dateOfJoining: joiningDate,
             });
-            toast({ title: "Student updated", description: `${data.name}'s details have been saved.` });
+
+            // 2. Clear membership state if re-admitting to ensure a fresh cycle
+            if (isReAdmission) {
+                await toggleEnrollment(student.id, true);
+            }
+
+            // 3. Process the financial duration (Renewal)
+            if (deposited > 0) {
+                await renewMembership(student.id, {
+                    months,
+                    amount: deposited,
+                    method: "CASH",
+                    note: "Re-Admission Finalization",
+                    dateOfJoining: joiningDate
+                });
+            }
+
+            // 4. Final verification of the student state
+            const updated = await getStudent(student.id);
+
+            toast({ 
+                title: isReAdmission ? "Re-Admission Successful" : "Profile Updated", 
+                description: `Student is now valid until ${updated.activeUntil ? format(parseISO(updated.activeUntil.slice(0, 10)), "dd MMM, yyyy") : "N/A"}.` 
+            });
             onSaved(updated);
             onOpenChange(false);
         } catch (e: any) {
-            const message = e?.response?.data?.message || e.message || "Failed to update student";
-            toast({ title: "Update failed", description: message, variant: "destructive" });
+            const message = e?.response?.data?.message || e.message || "Failed to finalize admission";
+            toast({ title: "Operation Error", description: message, variant: "destructive" });
         }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem]">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                        Edit Student Details
+                    <DialogTitle className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-600">
+                        {isReAdmission ? "Re-Admission Protocol" : "Update Student Profile"}
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6 pt-2">
-                    {/* Identity */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
                     <section className="space-y-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Identity</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -135,13 +172,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-gender">Gender *</Label>
-                                <Select
-                                    value={watch("gender")}
-                                    onValueChange={(v) => setValue("gender", v as "MALE" | "FEMALE" | "OTHER")}
-                                >
-                                    <SelectTrigger id="edit-gender">
-                                        <SelectValue placeholder="Select gender" />
-                                    </SelectTrigger>
+                                <Select value={watch("gender")} onValueChange={(v) => setValue("gender", v as any)}>
+                                    <SelectTrigger id="edit-gender"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="MALE">Male</SelectItem>
                                         <SelectItem value="FEMALE">Female</SelectItem>
@@ -151,24 +183,20 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-aadharNo">Aadhar No</Label>
-                                <Input id="edit-aadharNo" placeholder="12-digit number" {...register("aadharNo")} />
+                                <Input id="edit-aadharNo" {...register("aadharNo")} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dateOfJoining">Date of Joining</Label>
-                                <Input
-                                    id="dateOfJoining"
-                                    type="date"
-                                    {...register("dateOfJoining")}
-                                />
+                                <Label htmlFor="dateOfJoining">Joining Date</Label>
+                                <Input id="dateOfJoining" type="date" {...register("dateOfJoining")} />
                                 {durationInfo && (
-                                    <div className="mt-2 space-y-2">
-                                        <div className="text-xs flex items-center gap-2 text-primary bg-primary/5 p-2 rounded-md border border-primary/10">
+                                    <div className="mt-2 space-y-2 animate-in slide-in-from-top-2">
+                                        <div className="text-[10px] flex items-center gap-2 text-primary bg-primary/5 p-2 rounded-xl border border-primary/10">
                                             <CalendarClock className="h-3 w-3" />
-                                            <span>Membership Period: <strong>{durationInfo.months} Month(s)</strong></span>
+                                            <span>Period: <strong>{durationInfo.months} Month(s)</strong></span>
                                         </div>
-                                        <div className="text-xs flex items-center gap-2 text-emerald-600 bg-emerald-50 p-2 rounded-md border border-emerald-100">
+                                        <div className="text-[10px] flex items-center gap-2 text-emerald-600 bg-emerald-50 p-2 rounded-xl border border-emerald-100">
                                             <CheckCircle2 className="h-3 w-3" />
-                                            <span>Active until: <strong>{format(durationInfo.activeUntil, "dd-MMM-yyyy")}</strong></span>
+                                            <span>Valid Until: <strong>{format(durationInfo.activeUntil, "dd MMM yyyy")}</strong></span>
                                         </div>
                                     </div>
                                 )}
@@ -176,9 +204,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                         </div>
                     </section>
 
-                    {/* Library Details */}
                     <section className="space-y-4">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Library Details</h3>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Financial & Enrollment</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-seatNo">Seat No *</Label>
@@ -186,54 +213,39 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 {errors.seatNo && <p className="text-xs text-destructive">{errors.seatNo.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-seasonalFees">Seasonal Fees (₹ / month)</Label>
-                                <Input id="edit-seasonalFees" type="number" min={0} {...register("seasonalFees")} />
+                                <Label htmlFor="edit-seasonalFees">Seasonal Fees (₹ / mo)</Label>
+                                <Input id="edit-seasonalFees" type="number" {...register("seasonalFees")} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-feesDeposited">Fees Deposited (Total ₹)</Label>
-                                <Input id="edit-feesDeposited" type="number" min={0} {...register("feesDeposited")} />
-                                <p className="text-[10px] text-muted-foreground">Adjusting this will recalculate the active until date.</p>
+                                <Label htmlFor="edit-feesDeposited">Current Fee Submitted (₹)</Label>
+                                <Input id="edit-feesDeposited" type="number" placeholder="e.g. 600" className="text-emerald-600 font-bold" {...register("feesDeposited")} />
+                                <p className="text-[9px] text-muted-foreground italic">Validity will be calculated based ONLY on this current payment.</p>
                             </div>
                         </div>
                     </section>
 
-                    {/* Contact */}
                     <section className="space-y-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Contact</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2 sm:col-span-2">
+                            <div className="sm:col-span-2 space-y-2">
                                 <Label htmlFor="edit-address">Address</Label>
-                                <Textarea id="edit-address" rows={2} placeholder="House no, street, city, pincode" {...register("address")} />
+                                <Textarea id="edit-address" rows={2} {...register("address")} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-mobileNo">Mobile</Label>
-                                <Input id="edit-mobileNo" placeholder="10-digit number" {...register("mobileNo")} />
+                                <Input id="edit-mobileNo" {...register("mobileNo")} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-guardianName">Guardian's Name</Label>
+                                <Label htmlFor="edit-guardianName">Guardian</Label>
                                 <Input id="edit-guardianName" {...register("guardianName")} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-guardianMobile">Guardian's Mobile</Label>
-                                <Input id="edit-guardianMobile" {...register("guardianMobile")} />
                             </div>
                         </div>
                     </section>
 
-                    <DialogFooter className="gap-2 pt-2">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-                        >
-                            {isSubmitting ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</>
-                            ) : (
-                                <><Save className="mr-2 h-4 w-4" />Save Changes</>
-                            )}
+                    <DialogFooter className="gap-2">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit" disabled={isSubmitting} className="bg-slate-900 text-white font-bold h-12 px-8 rounded-2xl">
+                            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalizing...</> : <><Save className="mr-2 h-4 w-4" />Save Admission</>}
                         </Button>
                     </DialogFooter>
                 </form>
