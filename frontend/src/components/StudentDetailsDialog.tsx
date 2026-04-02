@@ -68,63 +68,71 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-[2.5rem] border-slate-200 shadow-2xl animate-in zoom-in-95 duration-300">
-                {/* Header Banner */}
+            <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border-slate-200 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col">
+                {/* Header Banner - Fixed size */}
                 <div className={cn(
-                  "p-8 text-white relative flex flex-col items-center sm:flex-row sm:items-end gap-6",
+                  "pt-14 pb-8 px-6 sm:pt-16 sm:pb-10 sm:px-10 text-white relative flex flex-col items-center sm:flex-row sm:items-end gap-6 shrink-0",
                   isActive ? "bg-emerald-600" : "bg-slate-900"
                 )}>
-                    <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-                      <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-8 w-8 p-0 rounded-full hover:bg-white/10 text-white">
-                        <X className="h-4 w-4" />
+                    {/* Background Decorative Element */}
+                    <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-white/10 blur-3xl translate-x-1/2 -translate-y-1/2" />
+                    <div className="absolute left-0 bottom-0 h-32 w-32 rounded-full bg-black/5 blur-2xl -translate-x-1/3 translate-y-1/3" />
+
+                    <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+                      <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-9 w-9 p-0 rounded-full hover:bg-white/10 text-white">
+                        <X className="h-4.5 w-4.5" />
                       </Button>
                     </div>
 
-                    <div className="h-28 w-28 rounded-[2rem] bg-white shadow-xl flex items-center justify-center text-4xl font-black shrink-0" style={{ color: isActive ? '#10b981' : '#0f172a' }}>
+                    <div className="h-20 w-20 sm:h-28 sm:w-28 rounded-[1.75rem] bg-white shadow-2xl flex items-center justify-center text-4xl sm:text-5xl font-black shrink-0 relative z-10" style={{ color: isActive ? '#10b981' : '#0f172a' }}>
                         {student.name.charAt(0).toUpperCase()}
                     </div>
 
-                    <div className="flex flex-col items-center sm:items-start space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-white/20 text-white border-white/20 backdrop-blur-md px-3 py-1 font-bold text-[10px] uppercase tracking-widest">
+                    <div className="flex flex-col items-center sm:items-start space-y-3 relative z-10 w-full sm:w-auto">
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <Badge className="bg-white/20 text-white border-white/20 backdrop-blur-md px-3 py-1 font-bold text-[8px] sm:text-[9px] uppercase tracking-widest border border-white/10">
                             Official Profile
                           </Badge>
                           {isActive ? (
-                            <Badge className="bg-emerald-400 text-emerald-950 font-black px-3 py-1 text-[10px] uppercase">Active Member</Badge>
+                            <Badge className="bg-emerald-400 text-emerald-950 font-black px-3 py-1 text-[8px] sm:text-[9px] uppercase shadow-lg shadow-emerald-950/20">Active Member</Badge>
                           ) : (
-                            <Badge variant="destructive" className="font-black px-3 py-1 text-[10px] uppercase">Inactive / Expired</Badge>
+                            <Badge variant="destructive" className="font-black px-3 py-1 text-[8px] sm:text-[9px] uppercase shadow-lg shadow-red-900/20">Inactive / Expired</Badge>
                           )}
                         </div>
-                        <h2 className="text-3xl font-black tracking-tight text-center sm:text-left">{student.name}</h2>
-                        <div className="flex items-center gap-4 text-white/70 text-sm font-medium">
-                          <span className="flex items-center gap-1"><Hash className="h-3 w-3" /> {student.regNo}</span>
-                          <span className="flex items-center gap-1 text-emerald-200"><UserCheck className="h-3 w-3" /> Seat {student.seatNo}</span>
+                        <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-center sm:text-left leading-tight drop-shadow-sm line-clamp-1">{student.name}</h2>
+                        <div className="flex items-center justify-center sm:justify-start gap-4 text-white/80 text-[10px] sm:text-xs font-bold tracking-wide">
+                          <span className="flex items-center gap-1.5 opacity-90"><Hash className="h-3 w-3" /> {student.regNo}</span>
+                          <span className="flex items-center gap-1.5 text-emerald-100"><UserCheck className="h-3 w-3" /> Seat {student.seatNo}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Content Area */}
-                <div className="p-6 sm:p-8 space-y-8 bg-white max-h-[60vh] overflow-y-auto">
+                {/* Content Area - Scrollable */}
+                <div className="p-5 sm:p-8 space-y-8 bg-white overflow-y-auto flex-1 scrollbar-hide">
                     {sections.map((section, idx) => (
-                      <div key={idx} className="space-y-4">
-                        <div className="flex items-center gap-2 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                          <section.icon className="h-3.5 w-3.5" />
-                          {section.title}
+                      <div key={idx} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 150}ms` }}>
+                        <div className="flex items-center gap-2 px-1">
+                          <div className="h-6 w-6 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                             <section.icon className="h-3.5 w-3.5" />
+                          </div>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                            {section.title}
+                          </h3>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {section.fields.map((field, fIdx) => (
                             <div key={fIdx} className={cn(
-                              "flex items-start gap-4 p-4 rounded-3xl border border-slate-50 bg-slate-50/30 transition-all hover:bg-white hover:shadow-lg hover:shadow-slate-100/50 hover:border-slate-100",
+                              "flex items-center gap-4 p-4 rounded-3xl border border-slate-100/60 bg-slate-50/20 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:border-emerald-100 group",
                               field.fullWidth && "sm:col-span-2"
                             )}>
-                              <div className="h-9 w-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0">
-                                <field.icon className="h-4 w-4 text-slate-400" />
+                              <div className="h-10 w-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                <field.icon className="h-4.5 w-4.5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
                               </div>
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">{field.label}</span>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{field.label}</span>
                                 <span className={cn(
                                   "text-sm font-bold text-slate-800 truncate",
-                                  field.mono && "font-mono font-medium",
+                                  field.mono && "font-mono font-medium tracking-tight",
                                   field.highlight && (isActive ? "text-emerald-600" : "text-primary"),
                                   field.status && (isActive ? "text-emerald-500" : "text-red-500")
                                 )}>
@@ -138,15 +146,15 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
                     ))}
                 </div>
 
-                {/* Footer */}
-                <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100">
-                    <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-2xl h-12 px-8 font-bold text-slate-600 border-slate-200">
+                {/* Footer - Fixed size */}
+                <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-3 shrink-0">
+                    <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto rounded-2xl h-11 px-8 font-bold text-slate-600 border-slate-200">
                       Close Profile
                     </Button>
-                    <Button className="rounded-2xl h-12 px-8 font-black bg-slate-900 shadow-xl shadow-slate-200/50">
+                    <Button className="w-full sm:w-auto rounded-2xl h-11 px-10 font-black bg-slate-950 text-white shadow-xl shadow-slate-200/60 transition-all active:scale-95">
                       Print ID Card
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );
