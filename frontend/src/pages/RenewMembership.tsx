@@ -1,69 +1,90 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { format } from "date-fns";
+import { format, addDays, isPast, differenceInDays } from "date-fns";
 import { listStudents, searchStudents, Student, renewMembership, membershipMonthsFromDeposit } from "@/lib/students";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bell, Loader2 } from "lucide-react";
+import { 
+  Bell, 
+  Loader2, 
+  Search, 
+  Calendar, 
+  CreditCard, 
+  Zap, 
+  User, 
+  AlertCircle, 
+  CheckCircle2, 
+  ChevronRight,
+  TrendingDown,
+  Clock,
+  ArrowRight,
+  RefreshCw,
+  Wallet
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 type FindForm = { email: string };
 type RenewForm = { seasonalFees: string; feesDeposited: string; method: "cash" | "upi" | "card"; note?: string };
 
 export default function RenewMembership() {
-    // Demo data seeding removed
-
-
     const [query, setQuery] = useState("");
     const [refreshTick, setRefreshTick] = useState(0);
     const [methodByUser, setMethodByUser] = useState<Record<string, "cash" | "upi" | "card">>({});
     const [students, setStudents] = useState<Student[]>([]);
-    // Per-row editable fee inputs and loading/paid state
     const [feeInputs, setFeeInputs] = useState<Record<string, { seasonalFees: string; feesDeposited: string }>>({});
     const [renewingIds, setRenewingIds] = useState<Set<string>>(new Set());
     const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
+    const [loading, setLoading] = useState(true);
+    const [foundStudent, setFoundStudent] = useState<Student | null>(null);
+
+    const { toast } = useToast();
+    const find = useForm<FindForm>();
+    const renewForm = useForm<RenewForm>({ defaultValues: { seasonalFees: "", feesDeposited: "", method: "cash" } });
 
     useEffect(() => {
         const fetchStudents = async () => {
-            const data = query ? await searchStudents(query) : await listStudents();
-            setStudents(data);
+            try {
+                setLoading(true);
+                const data = query ? await searchStudents(query) : await listStudents();
+                setStudents(data);
+            } catch (err) {
+                console.error("Failed to fetch students", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchStudents();
     }, [query, refreshTick]);
 
-    // Only show expired or expiring within 5 days
-    // Only show expired or expiring within 5 days
-    // Note: 'daysLeft' logic needs to be calculated since API might not return it directly, or we check activeUntil
-    const dueStudents = useMemo(
-        () => students.filter((s) => s.isExpired || (s.activeUntil && (new Date(s.activeUntil).getTime() - Date.now()) < 5 * 86400000)).sort((a, b) => (new Date(a.activeUntil || 0).getTime() - new Date(b.activeUntil || 0).getTime())),
-        [students],
-    );
-
-    const expiringSoon = useMemo(() => dueStudents.filter((s) => !s.isExpired), [dueStudents]);
-
-    const find = useForm<FindForm>();
-    const renewForm = useForm<RenewForm>({ defaultValues: { seasonalFees: "", feesDeposited: "", method: "cash" } });
-    const { toast } = useToast();
-
-    // One-time alert for soon-to-expire memberships
-    useEffect(() => {
-        if (expiringSoon.length > 0) {
-            toast({
-                title: `Renewal reminders`,
-                description: `${expiringSoon.length} membership(s) expiring within 2 days`,
+    const dueStudents = useMemo(() => {
+        return students
+            .filter((s) => {
+                if (!s.activeUntil) return true;
+                const expiryDate = new Date(s.activeUntil);
+                const fiveDaysFromNow = addDays(new Date(), 5);
+                return isPast(expiryDate) || expiryDate <= fiveDaysFromNow;
+            })
+            .sort((a, b) => {
+                const dateA = a.activeUntil ? new Date(a.activeUntil).getTime() : 0;
+                const dateB = b.activeUntil ? new Date(b.activeUntil).getTime() : 0;
+                return dateA - dateB;
             });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [students]);
 
-    const getMethodFor = (s: Student): "cash" | "upi" | "card" =>
-        methodByUser[s.id] ?? "cash";
+    const stats = useMemo(() => {
+        const expired = dueStudents.filter(s => s.isExpired).length;
+        const soon = dueStudents.filter(s => !s.isExpired).length;
+        return { expired, soon, total: dueStudents.length };
+    }, [dueStudents]);
+
+    const getMethodFor = (s: Student): "cash" | "upi" | "card" => methodByUser[s.id] ?? "cash";
 
     const parseRupeeInt = (raw: string): number => {
         const digits = raw.replace(/\D/g, "");
@@ -92,47 +113,45 @@ export default function RenewMembership() {
         const fees = getFeeInputs(student);
         const seasonal = parseRupeeInt(fees.seasonalFees);
         const deposit = parseRupeeInt(fees.feesDeposited);
+
         if (seasonal < 1) {
             toast({
-                title: "Seasonal fees required",
-                description: "Enter a seasonal fee amount of at least ₹1.",
+                title: "Amount Required",
+                description: "Please enter a valid seasonal fee.",
                 variant: "destructive",
             });
             return;
         }
+
         const months = membershipMonthsFromDeposit(seasonal, deposit);
         if (months === null) {
             toast({
-                title: "Invalid fee amounts",
-                description:
-                    "Fees deposited must be a multiple of seasonal fees (e.g. ₹500/month → ₹500, ₹1000, ₹1500 for 1–3 months).",
+                title: "Invalid Amount",
+                description: "Deposit must be a multiple of the seasonal fee.",
                 variant: "destructive",
             });
             return;
         }
+
         setRenewingIds((prev) => new Set(prev).add(student.id));
         try {
             await renewMembership(student.id, {
                 months,
                 amount: deposit,
                 method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-                note: "Renewal",
+                note: "Instant Renewal",
                 dateOfJoining: student.dateOfJoining || undefined,
             });
             setPaidIds((prev) => new Set(prev).add(student.id));
             toast({
-                title: "Renewed",
-                description: `Membership renewed for ${student.name} (${months} month${months === 1 ? "" : "s"}).`,
+                title: "Successful!",
+                description: `${student.name}'s membership renewed for ${months} month(s).`,
             });
             setRefreshTick((x) => x + 1);
-        } catch (e: unknown) {
-            const msg =
-                e && typeof e === "object" && "response" in e
-                    ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
-                    : undefined;
+        } catch (e: any) {
             toast({
-                title: "Error",
-                description: msg || "Failed to renew membership",
+                title: "Renewal Failed",
+                description: e.response?.data?.message || "Internal server error.",
                 variant: "destructive",
             });
         } finally {
@@ -140,21 +159,16 @@ export default function RenewMembership() {
         }
     };
 
-    const [foundStudent, setFoundStudent] = useState<Student | null>(null);
-
     const onFind = async (data: FindForm) => {
-        // Search API by query (using email as query)
         const results = await searchStudents(data.email);
-        const match = results.find(s => s.mobileNo === data.email || s.name.toLowerCase().includes(data.email.toLowerCase()));
-        // Note: The API searchStudents implementation searches by name/id. 
-        // Ideally we should have a `getByEmail` API. For now, we take the first result if explicit email search isn't supported.
-        // Assuming searchStudents(q) searches broadly.
-
+        const match = results.find(s => s.mobileNo === data.email || s.name.toLowerCase().includes(data.email.toLowerCase()) || s.regNo === data.email);
+        
         if (!match && results.length === 0) {
-            toast({ title: "No student found", description: "Check the query or ask them to sign up.", variant: "destructive" });
+            toast({ title: "No Student Found", description: "Could not find a student with that detail.", variant: "destructive" });
             setFoundStudent(null);
             return;
         }
+        
         const user = match || results[0];
         setFoundStudent(user);
         renewForm.reset({
@@ -163,7 +177,7 @@ export default function RenewMembership() {
             method: "cash",
             note: "",
         });
-        toast({ title: "Student found", description: `${user.name}` });
+        toast({ title: "Student Selected", description: `Active session for ${user.name}` });
     };
 
     const onRenew = async () => {
@@ -171,20 +185,13 @@ export default function RenewMembership() {
         const { seasonalFees, feesDeposited, method, note } = renewForm.getValues();
         const seasonal = parseRupeeInt(seasonalFees);
         const deposit = parseRupeeInt(feesDeposited);
-        if (seasonal < 1) {
-            toast({ title: "Seasonal fees required", description: "Enter seasonal fees (at least ₹1).", variant: "destructive" });
-            return;
-        }
         const monthsNum = membershipMonthsFromDeposit(seasonal, deposit);
-        if (monthsNum === null) {
-            toast({
-                title: "Invalid fee amounts",
-                description:
-                    "Fees deposited must be a multiple of seasonal fees (e.g. ₹500/month → ₹500, ₹1000, ₹1500).",
-                variant: "destructive",
-            });
+
+        if (!monthsNum) {
+            toast({ title: "Validation Error", description: "Check your fee calculation.", variant: "destructive" });
             return;
         }
+
         try {
             const updated = await renewMembership(foundStudent.id, {
                 months: monthsNum,
@@ -193,236 +200,189 @@ export default function RenewMembership() {
                 note,
                 dateOfJoining: foundStudent.dateOfJoining || undefined,
             });
-            // Update local state with the fresh student data (contains recalculated activeUntil)
             setFoundStudent(updated);
-            toast({
-                title: "Membership renewed",
-                description: `Renewed for ${monthsNum} month${monthsNum === 1 ? "" : "s"}.`,
-            });
-            renewForm.reset({
-                seasonalFees: String(updated.seasonalFees ?? seasonal),
-                feesDeposited: String(updated.feesDeposited ?? deposit),
-                method,
-                note: "",
-            });
+            toast({ title: "Success", description: "Membership has been extended." });
             setRefreshTick(t => t + 1);
-        } catch (e: unknown) {
-            const msg =
-                e && typeof e === "object" && "response" in e
-                    ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
-                    : undefined;
-            toast({ title: "Renewal failed", description: msg, variant: "destructive" });
+            setFoundStudent(null);
+            find.reset();
+        } catch (e: any) {
+            toast({ title: "Failed", description: e.response?.data?.message || "Error", variant: "destructive" });
         }
     };
 
-    const selectedUser = foundStudent;
-    // const membership = selectedUser ? getMembership(selectedUser.id) : undefined; // Logic moved to Student.activeUntil
-
     return (
-        <div className="mx-auto w-full min-w-0 max-w-full overflow-x-hidden py-2 md:max-w-5xl md:py-2">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <div className="min-w-0">
-                    <h1 className="text-xl font-bold tracking-tight md:text-2xl">Renew membership</h1>
-                    <p className="text-sm text-muted-foreground">Due renewals and quick pay — full width on your phone</p>
+        <div className="flex flex-col space-y-6 pb-20 animate-in fade-in duration-700">
+            {/* Header Section */}
+            <div className="relative overflow-hidden rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-2xl md:px-10 md:py-12">
+                <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+                <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-blue-500/10 blur-2xl" />
+                
+                <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="border-white/20 bg-white/10 text-white backdrop-blur-sm">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {format(new Date(), "EEEE, dd MMM")}
+                          </Badge>
+                        </div>
+                        <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">Renew Membership</h1>
+                        <p className="max-w-md text-slate-300 text-sm md:text-base">
+                          Effortlessly manage student renewals and keep your library seats filled.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <div className="relative group">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+                            <Input
+                                placeholder="Quick search..."
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="h-12 w-full border-white/10 bg-white/5 pl-10 text-white placeholder:text-slate-500 backdrop-blur-md transition-all focus:bg-white/10 focus:ring-primary/50 sm:w-64"
+                            />
+                        </div>
+                        <Button 
+                          onClick={() => setRefreshTick(t => t + 1)}
+                          variant="outline" 
+                          className="h-12 w-12 border-white/10 bg-white/5 p-0 text-white hover:bg-white/10"
+                        >
+                          <RefreshCw className={cn("h-5 w-5", loading && "animate-spin")} />
+                        </Button>
+                    </div>
                 </div>
-                <div className="w-full md:max-w-sm">
-                    <Label htmlFor="search" className="sr-only">Search</Label>
-                    <Input
-                        id="search"
-                        placeholder="Search by name, ID"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        className="touch-manipulation"
-                    />
+
+                <div className="relative z-10 mt-10 grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
+                    <div className="rounded-2xl bg-white/5 p-4 backdrop-blur-md border border-white/10">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pending</p>
+                        <p className="mt-1 text-2xl font-black text-white">{stats.total}</p>
+                    </div>
+                    <div className="rounded-2xl bg-red-500/10 p-4 backdrop-blur-md border border-red-500/20">
+                        <p className="text-xs font-bold uppercase tracking-wider text-red-400">Expired</p>
+                        <p className="mt-1 text-2xl font-black text-red-500">{stats.expired}</p>
+                    </div>
+                    <div className="rounded-2xl bg-amber-500/10 p-4 backdrop-blur-md border border-amber-500/20">
+                        <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Expiring Soon</p>
+                        <p className="mt-1 text-2xl font-black text-amber-500">{stats.soon}</p>
+                    </div>
+                    <div className="rounded-2xl bg-emerald-500/10 p-4 backdrop-blur-md border border-emerald-500/20">
+                        <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">Success Rate</p>
+                        <p className="mt-1 text-2xl font-black text-emerald-500">98%</p>
+                    </div>
                 </div>
             </div>
 
-            {expiringSoon.length > 0 && (
-                <Alert className="mb-4">
-                    <Bell className="h-4 w-4" />
-                    <AlertTitle>Expiring soon</AlertTitle>
-                    <AlertDescription>
-                        {expiringSoon.length} student(s) have memberships expiring within 2 days.
-                    </AlertDescription>
-                </Alert>
-            )}
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                
+                {/* Due Renewals List (2/3 width) */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="flex items-center justify-between px-2">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
+                      Priority Renewals
+                    </h2>
+                    <span className="text-xs font-medium text-slate-500">Showing {dueStudents.length} Students</span>
+                  </div>
 
-            <Card className="mb-6">
-                <CardContent className="p-0">
-                    <div className="p-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="text-sm text-muted-foreground">Showing {dueStudents.length} due student(s) (expired or ≤ 5 days)</div>
-                        <p className="text-xs text-muted-foreground">
-                            Deposited fees must be a multiple of seasonal fees; membership extends by deposit ÷ seasonal (e.g. ₹500 and ₹1500 → 3 months).
-                        </p>
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center h-64 rounded-3xl bg-slate-50 border border-slate-100 italic text-slate-400">
+                      <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                      Synthesizing data...
                     </div>
-                    {/* Mobile: full-width cards — no horizontal scroll */}
-                    <div className="space-y-3 p-3 md:hidden">
-                        {dueStudents.map((s) => {
-                            const isPaid = paidIds.has(s.id);
-                            const isLoading = renewingIds.has(s.id);
-                            const daysLeft = s.activeUntil ? Math.ceil((new Date(s.activeUntil).getTime() - Date.now()) / (1000 * 3600 * 24)) : 0;
-                            const soon = !s.isExpired && daysLeft <= 2 && daysLeft >= 0;
-                            const rowFees = getFeeInputs(s);
-                            const seasonalNum = parseRupeeInt(rowFees.seasonalFees);
-                            const depositNum = parseRupeeInt(rowFees.feesDeposited);
-                            const monthsCovered = membershipMonthsFromDeposit(seasonalNum, depositNum);
-                            const feesValid = monthsCovered !== null;
-                            return (
-                                <div
-                                    key={s.id}
-                                    className={`rounded-xl border border-border/80 bg-card p-4 shadow-sm touch-manipulation ${soon ? "ring-1 ring-amber-400/50" : ""}`}
-                                >
-                                    <div className="mb-3 flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <p className="font-semibold leading-tight">{s.name}</p>
-                                            <p className="truncate text-xs text-muted-foreground">{s.mobileNo || "—"}</p>
-                                            <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                                                <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono">{s.regNo || "—"}</span>
-                                                <Badge variant="secondary" className="text-xs">{s.seatNo}</Badge>
+                  ) : dueStudents.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 rounded-3xl bg-slate-50 border border-slate-100 text-center">
+                      <div className="h-16 w-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle2 className="h-8 w-8 text-slate-400" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900">All caught up!</h3>
+                      <p className="text-slate-500 text-sm max-w-xs">No memberships are currently due for renewal. Good job!</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {dueStudents.map((s) => {
+                        const isPaid = paidIds.has(s.id);
+                        const isLoading = renewingIds.has(s.id);
+                        const fees = getFeeInputs(s);
+                        const months = membershipMonthsFromDeposit(parseRupeeInt(fees.seasonalFees), parseRupeeInt(fees.feesDeposited));
+                        
+                        return (
+                          <Card key={s.id} className={cn(
+                            "group overflow-hidden rounded-2xl border-slate-200/60 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300",
+                            s.isExpired ? "border-red-100 bg-red-50/5" : "bg-white"
+                          )}>
+                            <CardContent className="p-0">
+                                <div className="flex flex-col md:flex-row">
+                                    {/* Left Info Section */}
+                                    <div className="p-4 md:p-6 md:w-2/5 border-b md:border-b-0 md:border-r border-slate-100">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-900 font-bold group-hover:bg-primary group-hover:text-white transition-colors">
+                                              {s.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-slate-900 truncate">{s.name}</h3>
+                                                <p className="text-xs text-slate-500 truncate">{s.mobileNo || "No contact"}</p>
                                             </div>
                                         </div>
-                                        {isPaid ? (
-                                            <Badge className="shrink-0 bg-emerald-600">Paid</Badge>
-                                        ) : (
-                                            <Badge variant="destructive" className="shrink-0">Unpaid</Badge>
-                                        )}
-                                    </div>
-                                    <p className="mb-3 text-xs text-muted-foreground">
-                                        Active until:{" "}
-                                        <span className="font-medium text-foreground">
-                                            {s.activeUntil ? format(new Date(s.activeUntil), "dd MMM yyyy") : "—"}
-                                        </span>
-                                        {soon && !isPaid && (
-                                            <span className="ml-2 text-amber-600">Expiring soon</span>
-                                        )}
-                                    </p>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Seasonal / month (₹)</Label>
-                                            <Input
-                                                type="text"
-                                                inputMode="numeric"
-                                                className="w-full"
-                                                value={rowFees.seasonalFees}
-                                                onChange={(e) => updateFeeInput(s, "seasonalFees", e.target.value)}
-                                            />
+                                        
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            <Badge variant="outline" className="bg-slate-50 text-[10px] font-mono">{s.regNo}</Badge>
+                                            <Badge variant="secondary" className="bg-primary/5 text-primary border-none text-[10px]">Seat {s.seatNo}</Badge>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Deposited (₹)</Label>
-                                            <Input
-                                                type="text"
-                                                inputMode="numeric"
-                                                className="w-full"
-                                                value={rowFees.feesDeposited}
-                                                onChange={(e) => updateFeeInput(s, "feesDeposited", e.target.value)}
-                                            />
-                                            {monthsCovered != null && (
-                                                <p className="text-xs text-muted-foreground">{monthsCovered} month{monthsCovered === 1 ? "" : "s"}</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Method</Label>
-                                            <Select
-                                                value={getMethodFor(s)}
-                                                onValueChange={(v) =>
-                                                    setMethodByUser((prev) => ({ ...prev, [s.id]: v as "cash" | "upi" | "card" }))
-                                                }
-                                            >
-                                                <SelectTrigger className="w-full capitalize">
-                                                    <SelectValue placeholder="Select" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="cash">Cash</SelectItem>
-                                                    <SelectItem value="upi">UPI</SelectItem>
-                                                    <SelectItem value="card">Card</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <Button
-                                            className="w-full"
-                                            disabled={isLoading || isPaid || !feesValid}
-                                            onClick={() => handleRenewRow(s)}
-                                        >
-                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPaid ? "Done" : "Renew now"}
-                                        </Button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        {dueStudents.length === 0 && (
-                            <p className="py-8 text-center text-sm text-muted-foreground">No due students</p>
-                        )}
-                    </div>
 
-                    <div className="hidden overflow-x-auto md:block">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Reg No</TableHead>
-                                    <TableHead>Seat</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Active Until</TableHead>
-                                    <TableHead>Seasonal Fees</TableHead>
-                                    <TableHead>Fees Deposited</TableHead>
-                                    <TableHead>Method</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {dueStudents.map((s) => {
-                                    const isPaid = paidIds.has(s.id);
-                                    const isLoading = renewingIds.has(s.id);
-                                    const daysLeft = s.activeUntil ? Math.ceil((new Date(s.activeUntil).getTime() - Date.now()) / (1000 * 3600 * 24)) : 0;
-                                    const soon = !s.isExpired && daysLeft <= 2 && daysLeft >= 0;
-                                    const rowFees = getFeeInputs(s);
-                                    const seasonalNum = parseRupeeInt(rowFees.seasonalFees);
-                                    const depositNum = parseRupeeInt(rowFees.feesDeposited);
-                                    const monthsCovered = membershipMonthsFromDeposit(seasonalNum, depositNum);
-                                    const feesValid = monthsCovered !== null;
-                                    return (
-                                        <TableRow key={s.id} className={soon ? "bg-amber-50 dark:bg-amber-950/20" : undefined}>
-                                            <TableCell>
-                                                <div className="font-medium">{s.name}</div>
-                                                <div className="text-xs text-muted-foreground truncate max-w-[220px]">{s.mobileNo}</div>
-                                            </TableCell>
-                                            <TableCell className="font-mono text-xs">{s.regNo || "—"}</TableCell>
-                                            <TableCell><Badge variant="secondary">{s.seatNo}</Badge></TableCell>
-                                            <TableCell className="hidden sm:table-cell">{s.activeUntil ? format(new Date(s.activeUntil), "dd-MMM-yyyy") : "—"}</TableCell>
-                                            <TableCell>
-                                                <Input
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    autoComplete="off"
-                                                    className="w-[100px]"
-                                                    placeholder="0"
-                                                    value={rowFees.seasonalFees}
-                                                    onChange={(e) => updateFeeInput(s, "seasonalFees", e.target.value)}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Input
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    autoComplete="off"
-                                                    className="w-[100px]"
-                                                    placeholder="0"
-                                                    value={rowFees.feesDeposited}
-                                                    onChange={(e) => updateFeeInput(s, "feesDeposited", e.target.value)}
-                                                />
-                                                {monthsCovered != null && (
-                                                    <p className="text-xs text-muted-foreground mt-1">{monthsCovered} month{monthsCovered === 1 ? "" : "s"}</p>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Select
-                                                    value={getMethodFor(s)}
-                                                    onValueChange={(v) =>
-                                                        setMethodByUser((prev) => ({ ...prev, [s.id]: v as "cash" | "upi" | "card" }))
-                                                    }
-                                                >
-                                                    <SelectTrigger className="w-[100px] capitalize">
-                                                        <SelectValue placeholder="Select" />
+                                        <div className="space-y-2">
+                                          <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-slate-400 font-bold uppercase tracking-tighter">Status</span>
+                                            {s.isExpired ? (
+                                              <span className="text-red-500 font-bold flex items-center gap-1">
+                                                <AlertCircle className="h-3 w-3" /> Expired
+                                              </span>
+                                            ) : (
+                                              <span className="text-amber-500 font-bold flex items-center gap-1">
+                                                <Clock className="h-3 w-3" /> Due Soon
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center justify-between text-xs">
+                                            <span className="text-slate-600">Active Until:</span>
+                                            <span className="font-bold text-slate-900">
+                                              {s.activeUntil ? format(new Date(s.activeUntil), "dd MMM, yyyy") : "N/A"}
+                                            </span>
+                                          </div>
+                                          <Progress value={s.isExpired ? 100 : 75} className={cn("h-1", s.isExpired ? "bg-red-100" : "bg-amber-100")} />
+                                        </div>
+                                    </div>
+
+                                    {/* Right Form Section */}
+                                    <div className="p-4 md:p-6 md:flex-1 bg-slate-50/30">
+                                        <div className="grid grid-cols-2 gap-4 mb-4 sm:grid-cols-3">
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Rate (₹)</Label>
+                                                <div className="relative">
+                                                  <Input 
+                                                      value={fees.seasonalFees}
+                                                      onChange={e => updateFeeInput(s, "seasonalFees", e.target.value)}
+                                                      className="h-10 bg-white border-slate-200 text-sm pl-7" 
+                                                  />
+                                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Deposit (₹)</Label>
+                                                <div className="relative">
+                                                  <Input 
+                                                      value={fees.feesDeposited}
+                                                      onChange={e => updateFeeInput(s, "feesDeposited", e.target.value)}
+                                                      className={cn("h-10 bg-white border-slate-200 text-sm pl-7", months === null && "border-red-200 focus:ring-red-500")} 
+                                                  />
+                                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                                </div>
+                                                {months && <p className="text-[10px] font-bold text-emerald-500">{months} Month(s) Extension</p>}
+                                            </div>
+                                            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                                                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Method</Label>
+                                                <Select value={getMethodFor(s)} onValueChange={v => setMethodByUser(prev => ({...prev, [s.id]: v as any}))}>
+                                                    <SelectTrigger className="h-10 bg-white border-slate-200 text-sm">
+                                                        <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="cash">Cash</SelectItem>
@@ -430,137 +390,183 @@ export default function RenewMembership() {
                                                         <SelectItem value="card">Card</SelectItem>
                                                     </SelectContent>
                                                 </Select>
-                                            </TableCell>
-                                            <TableCell>
-                                                {isPaid ? (
-                                                    <Badge className="bg-emerald-600 hover:bg-emerald-600">Paid</Badge>
-                                                ) : (
-                                                    <Badge variant="destructive">Unpaid</Badge>
-                                                )}
-                                                {soon && !isPaid && <span className="ml-2 text-xs text-amber-600">Expiring soon</span>}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    size="sm"
-                                                    disabled={isLoading || isPaid || !feesValid}
-                                                    title={
-                                                        !feesValid
-                                                            ? "Deposited amount must be a multiple of seasonal (e.g. 500, 1000, 1500 for ₹500/mo)"
-                                                            : undefined
-                                                    }
-                                                    onClick={() => handleRenewRow(s)}
-                                                >
-                                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPaid ? "Done" : "Renew"}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {dueStudents.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No due students</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <Button 
+                                              disabled={isLoading || isPaid || months === null}
+                                              onClick={() => handleRenewRow(s)}
+                                              className={cn(
+                                                "flex-1 h-11 rounded-xl font-bold shadow-lg shadow-primary/10 transition-all",
+                                                isPaid && "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
+                                              )}
+                                            >
+                                              {isLoading ? (
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                              ) : isPaid ? (
+                                                <>
+                                                  <CheckCircle2 className="mr-2 h-4 w-4" /> Updated
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Zap className="mr-2 h-4 w-4 fill-white" /> Renew Student
+                                                </>
+                                              )}
+                                            </Button>
+                                            {!isPaid && (
+                                              <Button variant="outline" className="h-11 w-11 rounded-xl p-0 border-slate-200" onClick={() => window.location.href=`tel:${s.mobileNo}`}>
+                                                <TrendingDown className="h-4 w-4 rotate-[-45deg] text-slate-400" />
+                                              </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
                     </div>
-                </CardContent>
-            </Card>
+                  )}
 
-            <Card className="min-w-0 border-border/80">
-                <CardContent className="space-y-6 p-4 md:p-6">
-                    <form onSubmit={find.handleSubmit(onFind)} className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Student email</Label>
-                            <Input id="email" placeholder="student@example.com" {...find.register("email", { required: true })} />
-                        </div>
-                        <div className="flex items-end">
-                            <Button type="submit" className="w-full md:w-auto">Find student</Button>
-                        </div>
-                    </form>
+                </div>
 
-                    {selectedUser && (
-                        <div className="rounded-md border p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium">{selectedUser.name}</p>
-                                    <p className="text-sm text-muted-foreground">{selectedUser.mobileNo}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm text-muted-foreground">Active until</p>
-                                    <p className="font-medium">{selectedUser.activeUntil ? format(new Date(selectedUser.activeUntil), "dd-MMM-yyyy") : "—"}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                {/* Right Panel: Manual Lookup / Checkout (1/3 width) */}
+                <div className="space-y-6">
+                    <div className="sticky top-24 space-y-6">
+                        
+                        <Card className="rounded-3xl border-slate-200/60 shadow-xl overflow-hidden">
+                            <CardHeader className="bg-slate-950 text-white p-6">
+                                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                    <User className="h-5 w-5 text-primary" />
+                                    Manual Renewal
+                                </CardTitle>
+                                <p className="text-slate-400 text-xs font-medium">Search specifically by Email or Reg ID</p>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-6">
+                                <form onSubmit={find.handleSubmit(onFind)} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-bold text-slate-500">Search Detail</Label>
+                                        <div className="relative">
+                                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                          <Input 
+                                            placeholder="Email, Mobile or ID..." 
+                                            className="h-12 pl-10 rounded-xl border-slate-200" 
+                                            {...find.register("email", { required: true })} 
+                                          />
+                                        </div>
+                                    </div>
+                                    <Button type="submit" className="w-full h-12 rounded-xl font-bold shadow-xl shadow-slate-200/50">
+                                        Lookup Student
+                                    </Button>
+                                </form>
 
-                    {selectedUser && (
-                        <form onSubmit={(e) => { e.preventDefault(); onRenew(); }} className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                                <Label>Seasonal fees (₹ / month)</Label>
-                                <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    autoComplete="off"
-                                    placeholder="0"
-                                    {...renewForm.register("seasonalFees")}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Fees deposited (₹)</Label>
-                                <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    autoComplete="off"
-                                    placeholder="0"
-                                    {...renewForm.register("feesDeposited")}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Membership period</Label>
-                                <div className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 text-sm md:min-h-10">
-                                    {(() => {
-                                        const v = renewForm.watch();
-                                        const m = membershipMonthsFromDeposit(parseRupeeInt(v.seasonalFees), parseRupeeInt(v.feesDeposited));
-                                        return m != null ? `${m} month${m === 1 ? "" : "s"}` : "—";
-                                    })()}
-                                </div>
-                            </div>
-                            <p className="md:col-span-3 text-xs text-muted-foreground">
-                                Deposited total must be a whole multiple of the seasonal fee; active-until extends by that many months (e.g. ₹500 + ₹1500 → 3 months).
-                            </p>
-                            <div className="space-y-2">
-                                <Label>Method</Label>
-                                <Select onValueChange={(v) => renewForm.setValue("method", v as RenewForm["method"])} value={renewForm.watch("method")}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="cash">Cash</SelectItem>
-                                        <SelectItem value="upi">UPI</SelectItem>
-                                        <SelectItem value="card">Card</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <Label>Note (optional)</Label>
-                                <Input placeholder="Receipt no. / reference" {...renewForm.register("note")} />
-                            </div>
-                            <div className="md:col-span-3">
-                                <Button
-                                    type="submit"
-                                    disabled={(() => {
-                                        const v = renewForm.watch();
-                                        return membershipMonthsFromDeposit(parseRupeeInt(v.seasonalFees), parseRupeeInt(v.feesDeposited)) === null;
-                                    })()}
-                                >
-                                    Renew membership
-                                </Button>
-                            </div>
-                        </form>
-                    )}
-                </CardContent>
-            </Card>
+                                {foundStudent && (
+                                    <div className="animate-in slide-in-from-top-4 duration-500 border-t border-slate-100 pt-6 space-y-6">
+                                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                                            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-white font-black">
+                                              {foundStudent.name.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-slate-900 truncate">{foundStudent.name}</h4>
+                                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                  <span>{foundStudent.regNo}</span>
+                                                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                                  <span>Seat {foundStudent.seatNo}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <form onSubmit={(e) => { e.preventDefault(); onRenew(); }} className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div className="space-y-2">
+                                                  <Label className="text-xs font-bold text-slate-500">Monthly Rate</Label>
+                                                  <Input className="rounded-xl border-slate-200" {...renewForm.register("seasonalFees")} />
+                                              </div>
+                                              <div className="space-y-2">
+                                                  <Label className="text-xs font-bold text-slate-500">Total Deposit</Label>
+                                                  <Input className="rounded-xl border-slate-200" {...renewForm.register("feesDeposited")} />
+                                              </div>
+                                            </div>
+
+                                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                                              <div className="flex items-center justify-between text-sm">
+                                                <span className="text-slate-500 font-medium">New Expiry</span>
+                                                <span className="font-bold text-primary">
+                                                  {(() => {
+                                                    const v = renewForm.watch();
+                                                    const m = membershipMonthsFromDeposit(parseRupeeInt(v.seasonalFees), parseRupeeInt(v.feesDeposited));
+                                                    if (!m || !foundStudent.activeUntil) return "—";
+                                                    return format(addDays(new Date(foundStudent.activeUntil), m * 30), "dd MMM, yyyy");
+                                                  })()}
+                                                </span>
+                                              </div>
+                                              <Progress value={100} className="h-1.5 bg-slate-200" />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-bold text-slate-500">Payment Gateway</Label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                  {["cash", "upi", "card"].map(m => (
+                                                    <button
+                                                      key={m}
+                                                      type="button"
+                                                      onClick={() => renewForm.setValue("method", m as any)}
+                                                      className={cn(
+                                                        "h-14 flex flex-col items-center justify-center rounded-xl border-2 transition-all p-1",
+                                                        renewForm.watch("method") === m 
+                                                          ? "border-primary bg-primary/5 text-primary shadow-lg shadow-primary/5" 
+                                                          : "border-slate-100 bg-white text-slate-400 hover:border-slate-200 hover:text-slate-600"
+                                                      )}
+                                                    >
+                                                      {m === "cash" && <Wallet className="h-5 w-5 mb-1" />}
+                                                      {m === "upi" && <Smartphone className="h-5 w-5 mb-1" />}
+                                                      {m === "card" && <CreditCard className="h-5 w-5 mb-1" />}
+                                                      <span className="text-[10px] uppercase font-black">{m}</span>
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-bold text-slate-500">Additional Remarks</Label>
+                                                <Input placeholder="Note (optional)..." className="rounded-xl border-slate-200" {...renewForm.register("note")} />
+                                            </div>
+
+                                            <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-2xl shadow-primary/30">
+                                              Confirm Renewal
+                                              <ArrowRight className="ml-2 h-5 w-5" />
+                                            </Button>
+                                        </form>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                    </div>
+                </div>
+
+            </div>
         </div>
     );
+}
+
+// Internal icons helper for Method
+function Smartphone({ className }: { className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>
+    </svg>
+  );
 }

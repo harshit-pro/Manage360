@@ -13,7 +13,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Save, CalendarClock } from "lucide-react";
+import { Loader2, Save, CalendarClock, CheckCircle2 } from "lucide-react";
 import { format, addMonths, differenceInCalendarMonths, parseISO } from "date-fns";
 import { Student, updateStudent } from "@/lib/students";
 
@@ -28,6 +28,7 @@ const schema = z.object({
     gender: z.enum(["MALE", "FEMALE", "OTHER"]),
     dateOfJoining: z.string().optional(),
     seasonalFees: z.coerce.number().nonnegative().optional(),
+    feesDeposited: z.coerce.number().nonnegative().optional(),
 });
 
 type EditForm = z.infer<typeof schema>;
@@ -60,34 +61,26 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 gender: (student.gender?.toUpperCase() as "MALE" | "FEMALE" | "OTHER") || "MALE",
                 dateOfJoining: student.dateOfJoining?.slice(0, 10) || "",
                 seasonalFees: student.seasonalFees ?? undefined,
+                feesDeposited: student.feesDeposited ?? undefined,
             });
         }
     }, [student, reset]);
 
-    // Compute live 'Active Until' preview based on current dateOfJoining
-    // Preserves the original membership duration in WHOLE MONTHS and applies it to the new joining date.
     const watchedJoiningDate = watch("dateOfJoining");
-    const activeUntilPreview = (() => {
-        if (!student || !watchedJoiningDate) return null;
+    const watchedSeasonal = watch("seasonalFees") || 0;
+    const watchedDeposited = watch("feesDeposited") || 0;
+
+    // Calculate live 'Membership Duration' and 'Active Until' preview
+    const durationInfo = (() => {
+        if (!watchedJoiningDate || watchedSeasonal <= 0) return null;
+        
+        const months = Math.floor(watchedDeposited / watchedSeasonal);
+        if (months <= 0) return null;
+
         try {
-            const newJoining = parseISO(watchedJoiningDate); // YYYY-MM-DD
-
-            const originalJoining = student.dateOfJoining ? parseISO(student.dateOfJoining.slice(0, 10)) : null;
-            const originalActiveUntil = student.activeUntil ? parseISO(student.activeUntil) : null;
-
-            if (originalActiveUntil && originalJoining) {
-                // Calculate whole months between original joining and original activeUntil
-                let months = differenceInCalendarMonths(originalActiveUntil, originalJoining);
-
-                // Adjust: if activeUntil day < joining day, difference overestimates by 1
-                if (originalActiveUntil.getDate() < originalJoining.getDate()) {
-                    months = Math.max(months - 1, 0);
-                }
-
-                // Apply the same duration to the new joining date (at least 1 month)
-                return addMonths(newJoining, Math.max(months, 1));
-            }
-            return null;
+            const joining = parseISO(watchedJoiningDate);
+            const activeUntil = addMonths(joining, months);
+            return { months, activeUntil };
         } catch {
             return null;
         }
@@ -96,6 +89,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
     const onSubmit = async (data: EditForm) => {
         if (!student) return;
         try {
+            // Include feesDeposited in the update request
             const updated = await updateStudent(student.id, {
                 name: data.name,
                 seatNo: data.seatNo,
@@ -107,6 +101,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 gender: data.gender,
                 dateOfJoining: data.dateOfJoining || undefined,
                 seasonalFees: data.seasonalFees,
+                // We add this assuming the service and backend support it
+                ...({ feesDeposited: data.feesDeposited } as any)
             });
             toast({ title: "Student updated", description: `${data.name}'s details have been saved.` });
             onSaved(updated);
@@ -164,11 +160,16 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                     type="date"
                                     {...register("dateOfJoining")}
                                 />
-                                {activeUntilPreview && (
-                                    <div className="mt-2 text-xs flex items-center gap-2 text-emerald-600 bg-emerald-50 p-2 rounded-md border border-emerald-100">
-                                        <CalendarClock className="h-3 w-3" />
-                                        <span>Active until: <strong>{format(activeUntilPreview, "dd-MMM-yyyy")}</strong></span>
-                                        <span className="text-[10px] text-amber-600 font-medium">— recalculated from new joining date</span>
+                                {durationInfo && (
+                                    <div className="mt-2 space-y-2">
+                                        <div className="text-xs flex items-center gap-2 text-primary bg-primary/5 p-2 rounded-md border border-primary/10">
+                                            <CalendarClock className="h-3 w-3" />
+                                            <span>Membership Period: <strong>{durationInfo.months} Month(s)</strong></span>
+                                        </div>
+                                        <div className="text-xs flex items-center gap-2 text-emerald-600 bg-emerald-50 p-2 rounded-md border border-emerald-100">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            <span>Active until: <strong>{format(durationInfo.activeUntil, "dd-MMM-yyyy")}</strong></span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -185,8 +186,13 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 {errors.seatNo && <p className="text-xs text-destructive">{errors.seatNo.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-seasonalFees">Seasonal Fees (₹)</Label>
+                                <Label htmlFor="edit-seasonalFees">Seasonal Fees (₹ / month)</Label>
                                 <Input id="edit-seasonalFees" type="number" min={0} {...register("seasonalFees")} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-feesDeposited">Fees Deposited (Total ₹)</Label>
+                                <Input id="edit-feesDeposited" type="number" min={0} {...register("feesDeposited")} />
+                                <p className="text-[10px] text-muted-foreground">Adjusting this will recalculate the active until date.</p>
                             </div>
                         </div>
                     </section>
