@@ -31,7 +31,7 @@ export default function StudentsHub() {
 
   // Refresh draft count whenever tab changes
   useEffect(() => {
-    setDraftBadge(draftCount());
+    draftCount().then(setDraftBadge).catch(() => setDraftBadge(0));
   }, [tab]);
 
   useEffect(() => {

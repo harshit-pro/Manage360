@@ -74,7 +74,7 @@ function QuickDraftForm({
     }
   }, [editDraft]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       toast({
         title: "Name Required",
@@ -95,10 +95,10 @@ function QuickDraftForm({
       };
 
       if (editDraft) {
-        updateDraft(editDraft.id, payload);
+        await updateDraft(editDraft.id, payload);
         toast({ title: "Draft Updated", description: `${name}'s draft has been updated.` });
       } else {
-        createDraft(payload);
+        await createDraft(payload);
         toast({ title: "Draft Saved!", description: `${name} saved as temporary record.` });
       }
 
@@ -109,6 +109,8 @@ function QuickDraftForm({
       setDateOfVisit(new Date().toISOString().slice(0, 10));
       setNotes("");
       onSaved();
+    } catch (e) {
+        toast({ title: "Error", description: "Failed to save draft.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -244,11 +246,22 @@ export default function StudentDrafts({ embedded = false }: { embedded?: boolean
   const [, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [drafts, setDrafts] = useState<StudentDraft[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState("");
   const [editingDraft, setEditingDraft] = useState<StudentDraft | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const refresh = () => setDrafts(listDrafts());
+  const refresh = async () => {
+    setLoading(true);
+    try {
+        const data = await listDrafts();
+        setDrafts(data);
+    } catch (e) {
+        toast({ title: "Error", description: "Failed to load drafts.", variant: "destructive" });
+    } finally {
+        setLoading(false);
+    }
+  };
 
   useEffect(() => {
     refresh();
@@ -264,11 +277,15 @@ export default function StudentDrafts({ embedded = false }: { embedded?: boolean
     );
   });
 
-  const handleDelete = (id: string) => {
-    deleteDraft(id);
-    refresh();
-    setDeleteConfirm(null);
-    toast({ title: "Draft Deleted", description: "The temporary record has been removed." });
+  const handleDelete = async (id: string) => {
+    try {
+        await deleteDraft(id);
+        refresh();
+        setDeleteConfirm(null);
+        toast({ title: "Draft Deleted", description: "The temporary record has been removed." });
+    } catch (e) {
+        toast({ title: "Error", description: "Failed to delete draft.", variant: "destructive" });
+    }
   };
 
   const handleCompleteRegistration = (draft: StudentDraft) => {

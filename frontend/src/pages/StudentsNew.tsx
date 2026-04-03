@@ -185,7 +185,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
             // If this was from a draft, clean it up
             const draftId = sessionStorage.getItem("cl.draftId");
             if (draftId) {
-                deleteDraft(draftId);
+                await deleteDraft(draftId);
                 sessionStorage.removeItem("cl.draftId");
             }
 
