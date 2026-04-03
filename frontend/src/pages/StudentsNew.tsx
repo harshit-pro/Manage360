@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit, setStudentMeta } from "@/lib/students";
+import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit, setStudentMeta, isSeatAvailable } from "@/lib/students";
 import { deleteDraft } from "@/lib/drafts";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -113,6 +113,29 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
         }
         return Number(watchedMembershipMonths) || 1;
     }, [watchedSeasonalFees, watchedFeesDeposited, watchedMembershipMonths]);
+
+    const [isCheckingSeat, setIsCheckingSeat] = useState(false);
+    const [seatStatus, setSeatStatus] = useState<"available" | "taken" | "checking" | null>(null);
+
+    // Debounced seat check
+    useEffect(() => {
+        if (!watchedSeat || watchedSeat.trim().length === 0) {
+            setSeatStatus(null);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setSeatStatus("checking");
+            try {
+                const available = await isSeatAvailable(watchedSeat);
+                setSeatStatus(available ? "available" : "taken");
+            } catch {
+                setSeatStatus(null);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [watchedSeat]);
 
     const activeUntilPreview = useMemo(() => {
         if (!watchedJoiningDate) return null;
@@ -318,7 +341,17 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Seat Assignment</Label>
                                         <div className="relative">
                                           <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                          <Input placeholder="e.g. S-22" className="h-12 pl-10 rounded-2xl border-slate-200 font-bold" {...register("seatNo")} />
+                                          <Input placeholder="e.g. S-22" className="h-12 pl-10 pr-12 rounded-2xl border-slate-200 font-bold" {...register("seatNo")} />
+                                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            {seatStatus === "checking" && <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+                                            {seatStatus === "available" && <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in zoom-in duration-300" />}
+                                            {seatStatus === "taken" && (
+                                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-500 animate-in slide-in-from-right-2 duration-300">
+                                                <AlertCircle className="h-3 w-3" />
+                                                <span className="text-[9px] font-black uppercase tracking-tighter">Taken</span>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                         {errors.seatNo && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.seatNo.message}</p>}
                                     </div>

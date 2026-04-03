@@ -36,8 +36,11 @@ import {
   StickyNote,
   Hash,
   Calendar,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import { isSeatAvailable } from "@/lib/students";
 
 /* ─── Quick Draft Form ──────────────────────────────────── */
 
@@ -57,6 +60,27 @@ function QuickDraftForm({
   const [dateOfVisit, setDateOfVisit] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [seatStatus, setSeatStatus] = useState<"available" | "taken" | "checking" | null>(null);
+
+  // Debounced seat check
+  useEffect(() => {
+    if (!seatNo || seatNo.trim().length === 0) {
+      setSeatStatus(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSeatStatus("checking");
+      try {
+        const available = await isSeatAvailable(seatNo);
+        setSeatStatus(available ? "available" : "taken");
+      } catch {
+        setSeatStatus(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [seatNo]);
 
   useEffect(() => {
     if (editDraft) {
@@ -187,8 +211,18 @@ function QuickDraftForm({
                 placeholder="e.g. S-12"
                 value={seatNo}
                 onChange={(e) => setSeatNo(e.target.value)}
-                className="h-12 pl-10 rounded-2xl border-slate-200"
+                className="h-12 pl-10 pr-12 rounded-2xl border-slate-200"
               />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {seatStatus === "checking" && <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+                {seatStatus === "available" && <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in zoom-in duration-300" />}
+                {seatStatus === "taken" && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-500 animate-in slide-in-from-right-2 duration-300">
+                    <AlertCircle className="h-3 w-3" />
+                    <span className="text-[9px] font-black uppercase tracking-tighter">Taken</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

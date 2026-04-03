@@ -211,4 +211,11 @@ export async function nextStudentCode(): Promise<string> {
     return `S${String(max + 1).padStart(3, "0")}`;
 }
 
+/** Check if a seat number is available (not taken by an active student) */
+export async function isSeatAvailable(seatNo: string): Promise<boolean> {
+    if (!seatNo || !seatNo.trim()) return true;
+    const response = await api.get("/students/check-seat", { params: { seatNo: seatNo.trim() } });
+    return !!response.data;
+}
+
 export const listStudents = listAllStudents;
