@@ -125,11 +125,15 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 gender: data.gender,
                 seasonalFees: seasonal,
                 dateOfJoining: joiningDate,
+                // Explicitly set enrolled status if re-admitting to avoid backend defaults
+                ...(isReAdmission ? { isEnrolled: true } : {}),
             });
 
             // 2. Clear membership state if re-admitting to ensure a fresh cycle
             if (isReAdmission) {
                 await toggleEnrollment(student.id, true);
+                // Minor delay to allow backend to process the status change
+                await new Promise(r => setTimeout(r, 600));
             }
 
             // 3. Process the financial duration (Renewal)
@@ -138,9 +142,11 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     months,
                     amount: deposited,
                     method: "CASH",
-                    note: "Re-Admission Finalization",
+                    note: isReAdmission ? "Re-Admission Finalization" : "Renewal",
                     dateOfJoining: joiningDate
                 });
+                // Small delay after renewal too
+                await new Promise(r => setTimeout(r, 400));
             }
 
             // 4. Final verification of the student state

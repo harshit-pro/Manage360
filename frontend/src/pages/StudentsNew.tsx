@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit, setStudentMeta } from "@/lib/students";
+import { deleteDraft } from "@/lib/drafts";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -78,6 +79,21 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
     useEffect(() => {
         nextRegNo().then((reg) => setValue("regNo", reg));
+    }, [setValue]);
+
+    // Pre-fill from draft if redirected from Drafts tab
+    useEffect(() => {
+        try {
+            const raw = sessionStorage.getItem("cl.draftToRegister");
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (draft.name) setValue("name", draft.name);
+            if (draft.mobileNo) setValue("mobile", draft.mobileNo);
+            if (draft.seatNo) setValue("seatNo", draft.seatNo);
+            // Store draft ID so we can delete it after successful registration
+            sessionStorage.setItem("cl.draftId", draft.id || "");
+            sessionStorage.removeItem("cl.draftToRegister");
+        } catch {}
     }, [setValue]);
 
     const watchedName = watch("name");
@@ -164,6 +180,13 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                     currentValidityMonths: months,
                     feesDeposited: amount 
                 });
+            }
+
+            // If this was from a draft, clean it up
+            const draftId = sessionStorage.getItem("cl.draftId");
+            if (draftId) {
+                deleteDraft(draftId);
+                sessionStorage.removeItem("cl.draftId");
             }
 
             toast({ title: "Registration Successful", description: `${data.name} is now a member with correct validity.` });
