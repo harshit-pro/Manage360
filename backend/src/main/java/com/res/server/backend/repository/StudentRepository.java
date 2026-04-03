@@ -27,6 +27,9 @@ public interface StudentRepository
 
     long countByLibrary_IdAndIsEnrolledTrue(UUID libraryId);
 
+    @Query(value = "SELECT s.seat_no FROM students s WHERE s.library_id = :libraryId AND s.seat_no IS NOT NULL ORDER BY CAST(s.seat_no AS INTEGER) DESC LIMIT 1", nativeQuery = true)
+    String findMaxSeatNumberByLibraryId(@Param("libraryId") UUID libraryId);
+
     @Query("""
 select coalesce(sum(s.seasonalFees - s.feesDeposited), 0)
 from Student s

@@ -131,4 +131,29 @@ public class StudentServiceImpl implements StudentService {
         }
         return studentRepository.save(student);
     }
+
+    /**
+     * Generate the next available seat number for a library
+     * Finds the maximum numeric seat number and increments it
+     */
+    private String generateNextSeatNumber(UUID libraryId) {
+        // Get all students for the library and find the max seat number
+        String maxSeatNo = studentRepository.findMaxSeatNumberByLibraryId(libraryId);
+
+        int nextSeatNumber = 1;
+        if (maxSeatNo != null && !maxSeatNo.isEmpty()) {
+            try {
+                // Extract numeric part from the seat number (e.g., "SEAT-123" -> 123)
+                String numericPart = maxSeatNo.replaceAll("\\D+", "");
+                if (!numericPart.isEmpty()) {
+                    nextSeatNumber = Integer.parseInt(numericPart) + 1;
+                }
+            } catch (NumberFormatException e) {
+                // If parsing fails, keep default value of 1
+                // This handles cases where seat numbers are not purely numeric
+            }
+        }
+
+        return String.valueOf(nextSeatNumber);
+    }
 }
