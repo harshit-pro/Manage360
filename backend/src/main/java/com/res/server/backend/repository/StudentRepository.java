@@ -21,6 +21,8 @@ public interface StudentRepository
 
     boolean existsByLibrary_IdAndSeatNo(UUID libraryId, String seatNo);
 
+    boolean existsByLibrary_IdAndSeatNoAndIsEnrolledTrue(UUID libraryId, String seatNo);
+
     boolean existsByLibrary_IdAndRegNo(UUID libraryId, String regNo);
 
     long countByLibrary_Id(UUID libraryId);

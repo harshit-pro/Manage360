@@ -23,5 +23,7 @@ public interface StudentService {
 
     Student update(UUID id, com.res.server.backend.dto.request.StudentUpdateRequest request);
 
+    boolean isSeatAvailable(String seatNo);
+
     // Page<StudentResponse> getAllStudents(Pageable pageable);
 }

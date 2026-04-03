@@ -13,7 +13,10 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "students",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"library_id", "reg_no"})
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"library_id", "reg_no"}),
+                @UniqueConstraint(columnNames = {"library_id", "seat_no"})
+        }
 )
 // explain above
 // This annotation defines a unique constraint on the combination of library_id and reg_no
@@ -38,7 +41,7 @@ public class Student extends BaseEntity {
     private String regNo; // registration number of student
     private String name;
     private String aadharNo;
-    @Column(name = "seat_no", unique = true)
+    @Column(name = "seat_no")
     private String seatNo;
     private LocalDate dateOfJoining;
     private String mobileNo;

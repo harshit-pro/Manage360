@@ -156,4 +156,14 @@ public class StudentServiceImpl implements StudentService {
 
         return String.valueOf(nextSeatNumber);
     }
+
+    @Override
+    public boolean isSeatAvailable(String seatNo) {
+        if (seatNo == null || seatNo.trim().isEmpty()) {
+            return true;
+        }
+        UUID libraryId = LibraryContext.getLibraryId();
+        // A seat is available if no ACTIVE (enrolled) student is using it
+        return !studentRepository.existsByLibrary_IdAndSeatNoAndIsEnrolledTrue(libraryId, seatNo.trim());
+    }
 }

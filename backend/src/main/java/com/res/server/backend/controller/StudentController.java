@@ -59,6 +59,11 @@ public class StudentController {
             @RequestBody com.res.server.backend.dto.request.StudentUpdateRequest request) {
         return studentMapper.toResponse(studentService.update(id, request));
     }
+
+    @GetMapping("/check-seat")
+    public boolean checkSeat(@RequestParam String seatNo) {
+        return studentService.isSeatAvailable(seatNo);
+    }
     // for getting all students in a library, we can use the search endpoint with no
     // query and no enrollment filter
     // rest api endpoints:
