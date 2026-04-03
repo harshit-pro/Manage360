@@ -95,16 +95,22 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         const months = Math.floor(deposited / seasonal) || 1;
 
         try {
-            // 0. Update cumulative session months for local validity override
+            // 0. Update cumulative session months and total fees for local validity override
+            const existingMonths = student.meta?.currentValidityMonths || 0;
+            const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
+
             if (isReAdmission) {
                // Re-admission starts a fresh session with a reset Joining Date
-               setStudentMeta(student.id, { currentValidityMonths: months });
+               setStudentMeta(student.id, { 
+                   currentValidityMonths: months,
+                   feesDeposited: existingFees + deposited
+               });
             } else if (deposited > 0) {
                // Normal payment/renewal adds to the existing session count
-               const existing = student.meta?.currentValidityMonths || 0;
-               if (existing > 0) {
-                   setStudentMeta(student.id, { currentValidityMonths: existing + months });
-               }
+               setStudentMeta(student.id, { 
+                   currentValidityMonths: existingMonths + months,
+                   feesDeposited: existingFees + deposited
+               });
             }
 
             // 1. Update basic profile details (Name, Seat, etc.)

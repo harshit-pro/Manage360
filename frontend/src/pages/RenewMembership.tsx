@@ -135,10 +135,14 @@ export default function RenewMembership() {
 
         setRenewingIds((prev) => new Set(prev).add(student.id));
         try {
-            // SYNC LOCAL OVERRIDE: Update cumulative months for the strict validity logic if active
-            if (student.meta?.currentValidityMonths) {
-                setStudentMeta(student.id, { currentValidityMonths: student.meta.currentValidityMonths + months });
-            }
+            // Update metadata for accurate validity tracking in UI and cumulative fees
+            const currentMonths = student.meta?.currentValidityMonths || 0;
+            const currentFees = student.meta?.feesDeposited || student.feesDeposited || 0;
+            
+            setStudentMeta(student.id, { 
+                currentValidityMonths: currentMonths + months,
+                feesDeposited: currentFees + deposit
+            });
 
             await renewMembership(student.id, {
                 months,
@@ -198,12 +202,14 @@ export default function RenewMembership() {
         }
 
         try {
-            // SYNC LOCAL OVERRIDE: Update cumulative months for the strict validity logic if active
-            if (foundStudent.meta?.currentValidityMonths) {
-                setStudentMeta(foundStudent.id, { 
-                    currentValidityMonths: foundStudent.meta.currentValidityMonths + monthsNum 
-                });
-            }
+            // SYNC LOCAL OVERRIDE: Update cumulative months and fees for the strict validity logic
+            const currentMonths = foundStudent.meta?.currentValidityMonths || 0;
+            const currentFees = foundStudent.meta?.feesDeposited || foundStudent.feesDeposited || 0;
+
+            setStudentMeta(foundStudent.id, { 
+                currentValidityMonths: currentMonths + monthsNum,
+                feesDeposited: currentFees + deposit
+            });
 
             const updated = await renewMembership(foundStudent.id, {
                 months: monthsNum,

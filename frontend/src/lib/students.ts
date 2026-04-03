@@ -70,7 +70,7 @@ function normalizeStudent(raw: any): Student {
     const m = raw.membership;
     let activeUntil: string | undefined = m?.activeUntil ?? raw.activeUntil;
 
-    // Fetch client-side metadata to check for manual validity overrides
+    // Fetch client-side metadata to check for manual validity overrides and cumulative fees
     const meta = ensureMeta(raw.id);
     const doj: string | undefined = raw.dateOfJoining;
 
@@ -86,12 +86,18 @@ function normalizeStudent(raw: any): Student {
         } catch { }
     }
 
+    // AGGREGATE FEES: If metadata has a cumulative feesDeposited, it overrides the backend's (potentially static) value.
+    // We treat the backend's value as a 'base' if metadata is empty.
+    const feesDeposited = (meta.feesDeposited && meta.feesDeposited > 0) 
+        ? meta.feesDeposited 
+        : (raw.feesDeposited || 0);
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const dateExpired = activeUntil ? new Date(activeUntil) < todayStart : true;
     const backendSaysExpired = m ? m.status === "EXPIRED" : raw.isExpired;
 
-    return { ...raw, activeUntil, isExpired: backendSaysExpired || dateExpired, membership: m, meta };
+    return { ...raw, activeUntil, feesDeposited, isExpired: backendSaysExpired || dateExpired, membership: m, meta };
 }
 
 /** Fetch a single student by ID */

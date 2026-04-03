@@ -159,8 +159,11 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                     dateOfJoining: (data.dateOfJoining || new Date().toISOString()).slice(0, 10)
                 });
 
-                // Update metadata for accurate validity tracking in UI
-                setStudentMeta(student.id, { currentValidityMonths: months });
+                // Update metadata for accurate validity tracking in UI and cumulative fees
+                setStudentMeta(student.id, { 
+                    currentValidityMonths: months,
+                    feesDeposited: amount 
+                });
             }
 
             toast({ title: "Registration Successful", description: `${data.name} is now a member with correct validity.` });
