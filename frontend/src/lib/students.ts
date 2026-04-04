@@ -189,16 +189,10 @@ export async function searchStudents(query: string): Promise<Student[]> {
     return all.filter((s) => s.name.toLowerCase().includes(lower) || s.id.toLowerCase().includes(lower));
 }
 
-/** Generate next registration number */
+/** Generate next registration number from backend */
 export async function nextRegNo(): Promise<string> {
-    const all = await listAllStudents();
-    const max = all.reduce((m, s) => {
-        const numMatch = (s.regNo || "").match(/(\d+)$/);
-        return numMatch ? Math.max(m, parseInt(numMatch[1])) : m;
-    }, 0);
-    const lastWithPrefix = all.find(s => s.regNo && /^[A-Za-z]/.test(s.regNo));
-    const prefix = lastWithPrefix?.regNo?.match(/^([A-Za-z]+)/)?.[1] || "NL";
-    return `${prefix}${String(max + 1).padStart(3, "0")}`;
+    const response = await api.get("/students/next-reg-no");
+    return response.data;
 }
 
 /** Generate next student code (e.g., S001) */

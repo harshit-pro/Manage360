@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { signup } from "@/lib/auth";
-import { Loader2, Library, Users, MapPin, Building2, Mail, Lock, ArrowRight } from "lucide-react";
+import { Loader2, Library, Users, MapPin, Building2, Mail, Lock, ArrowRight, Hash } from "lucide-react";
 
 export default function Signup() {
     const navigate = useNavigate();
@@ -17,15 +17,28 @@ export default function Signup() {
         address: "",
         city: "",
         totalSeats: "",
+        regPrefix: "",
         email: "",
         password: "",
     });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.id]: e.target.value });
-        if (errors[e.target.id]) {
-            setErrors(prev => ({ ...prev, [e.target.id]: "" }));
+        const { id, value } = e.target;
+        
+        let newForm = { ...form, [id]: value };
+        
+        // Auto-generate prefix if libraryName changes and user hasn't manually edited prefix yet?
+        // Actually, let's just auto-generate for every libraryName change if prefix is empty or matches previous auto-gen
+        if (id === "libraryName" && value) {
+            const autoPrefix = value.trim().split(/\s+/).map(w => w[0]?.toUpperCase()).join("").slice(0, 4);
+            newForm.regPrefix = autoPrefix;
+        }
+
+        setForm(newForm);
+        
+        if (errors[id]) {
+            setErrors(prev => ({ ...prev, [id]: "" }));
         }
     };
 
@@ -49,6 +62,7 @@ export default function Signup() {
                 address: form.address || undefined,
                 city: form.city || undefined,
                 totalSeats: Number(form.totalSeats),
+                regPrefix: form.regPrefix || undefined,
                 email: form.email,
                 password: form.password,
             });
@@ -102,6 +116,42 @@ export default function Signup() {
                                     <Input id="totalSeats" type="number" min="1" className="pl-9" placeholder="100" value={form.totalSeats} onChange={handleChange} />
                                 </div>
                                 {errors.totalSeats && <p className="text-sm text-destructive">{errors.totalSeats}</p>}
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="regPrefix">Student ID Prefix</Label>
+                                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded">Customizable</span>
+                                </div>
+                                <div className="relative">
+                                    <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                        id="regPrefix" 
+                                        className="pl-9 font-mono uppercase" 
+                                        placeholder="DSL" 
+                                        value={form.regPrefix} 
+                                        onChange={(e) => setForm({ ...form, regPrefix: e.target.value.toUpperCase() })} 
+                                    />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground leading-tight">
+                                    Example: {form.regPrefix || "LIB"}0001, {form.regPrefix || "LIB"}0002...
+                                </p>
+                            </div>
+                            <div className="flex items-end flex-col justify-center gap-2 p-3 rounded-xl border border-primary/10 bg-primary/5">
+                                <div className="w-full">
+                                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-1">Live Preview</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-8 w-1.5 bg-primary rounded-full" />
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-foreground font-mono leading-none">
+                                                {form.regPrefix || "LIB"}0001
+                                            </span>
+                                            <span className="text-[9px] text-muted-foreground uppercase font-medium mt-0.5">Registration Card Number</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

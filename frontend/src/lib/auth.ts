@@ -118,6 +118,7 @@ export async function signup(payload: {
     address?: string;
     city?: string;
     totalSeats: number;
+    regPrefix?: string;
     email: string;
     password: string;
 }): Promise<{ accessToken: string }> {
