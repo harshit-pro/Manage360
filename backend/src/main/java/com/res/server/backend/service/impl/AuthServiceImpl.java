@@ -42,8 +42,13 @@ public class AuthServiceImpl implements AuthService {
         library.setAddress(request.getAddress());
         library.setCity(request.getCity());
         library.setTotalSeats(request.getTotalSeats());
-        library.setRegPrefix(PrefixUtil.generate(request.getLibraryName())); // generate prefix from library name eg
-        library.setNextRegSeq(1);// initialize next reg seq to 1 example LIB001
+        
+        String prefix = (request.getRegPrefix() != null && !request.getRegPrefix().isBlank()) 
+            ? request.getRegPrefix().trim().toUpperCase() 
+            : PrefixUtil.generate(request.getLibraryName());
+
+        library.setRegPrefix(prefix); 
+        library.setNextRegSeq(1);
 
         libraryRepository.save(library); // persist library to get generated ID for foreign key
 

@@ -166,4 +166,9 @@ public class StudentServiceImpl implements StudentService {
         // A seat is available if no ACTIVE (enrolled) student is using it
         return !studentRepository.existsByLibrary_IdAndSeatNoAndIsEnrolledTrue(libraryId, seatNo.trim());
     }
+
+    @Override
+    public String getNextRegNo() {
+        return regNoService.peek();
+    }
 }

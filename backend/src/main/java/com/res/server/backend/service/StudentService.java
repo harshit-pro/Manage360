@@ -25,5 +25,7 @@ public interface StudentService {
 
     boolean isSeatAvailable(String seatNo);
 
+    String getNextRegNo();
+
     // Page<StudentResponse> getAllStudents(Pageable pageable);
 }

@@ -64,6 +64,11 @@ public class StudentController {
     public boolean checkSeat(@RequestParam String seatNo) {
         return studentService.isSeatAvailable(seatNo);
     }
+
+    @GetMapping("/next-reg-no")
+    public String getNextRegNo() {
+        return studentService.getNextRegNo();
+    }
     // for getting all students in a library, we can use the search endpoint with no
     // query and no enrollment filter
     // rest api endpoints:

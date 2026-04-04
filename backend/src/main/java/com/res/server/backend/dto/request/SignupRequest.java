@@ -26,4 +26,6 @@ public class SignupRequest {
     private String email;
     @NotBlank
     private String password;
+
+    private String regPrefix;
 }

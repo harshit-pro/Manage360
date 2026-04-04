@@ -60,6 +60,10 @@ public class MembershipServiceImpl implements MembershipService {
                 membership.setStatus(MembershipStatus.ACTIVE);
                 membership.setLastPaymentMethod(method);
 
+                // 🔥 Update student's cumulative deposited fees to reflect this payment
+                student.setFeesDeposited(student.getFeesDeposited() + amount);
+                studentRepository.save(student);
+
                 Payment payment = new Payment();
                 payment.setLibrary(student.getLibrary());
                 payment.setStudent(student);
