@@ -31,14 +31,14 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 type FindForm = { email: string };
-type RenewForm = { seasonalFees: string; feesDeposited: string; method: "cash" | "upi" | "card"; note?: string };
+type RenewForm = { seasonalFees: string; feesDeposited: string; months: string; method: "cash" | "upi" | "card"; note?: string };
 
 export default function RenewMembership() {
     const [query, setQuery] = useState("");
     const [refreshTick, setRefreshTick] = useState(0);
     const [methodByUser, setMethodByUser] = useState<Record<string, "cash" | "upi" | "card">>({});
     const [students, setStudents] = useState<Student[]>([]);
-    const [feeInputs, setFeeInputs] = useState<Record<string, { seasonalFees: string; feesDeposited: string }>>({});
+    const [feeInputs, setFeeInputs] = useState<Record<string, { seasonalFees: string; feesDeposited: string; months: string }>>({});
     const [renewingIds, setRenewingIds] = useState<Set<string>>(new Set());
     const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function RenewMembership() {
 
     const { toast } = useToast();
     const find = useForm<FindForm>();
-    const renewForm = useForm<RenewForm>({ defaultValues: { seasonalFees: "", feesDeposited: "", method: "cash" } });
+    const renewForm = useForm<RenewForm>({ defaultValues: { seasonalFees: "", feesDeposited: "", months: "1", method: "cash" } });
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -97,9 +97,10 @@ export default function RenewMembership() {
         feeInputs[s.id] ?? {
             seasonalFees: String(s.seasonalFees ?? 0),
             feesDeposited: String(s.feesDeposited ?? 0),
+            months: "1",
         };
 
-    const updateFeeInput = (s: Student, field: "seasonalFees" | "feesDeposited", value: string) => {
+    const updateFeeInput = (s: Student, field: "seasonalFees" | "feesDeposited" | "months", value: string) => {
         const digitsOnly = value.replace(/\D/g, "");
         const current = getFeeInputs(s);
         setFeeInputs((prev) => ({
@@ -123,15 +124,7 @@ export default function RenewMembership() {
             return;
         }
 
-        const months = membershipMonthsFromDeposit(seasonal, deposit);
-        if (months === null) {
-            toast({
-                title: "Invalid Amount",
-                description: "Deposit must be a multiple of the seasonal fee.",
-                variant: "destructive",
-            });
-            return;
-        }
+        const months = parseInt(fees.months, 10) || 1;
 
         setRenewingIds((prev) => new Set(prev).add(student.id));
         try {
@@ -183,6 +176,7 @@ export default function RenewMembership() {
         renewForm.reset({
             seasonalFees: String(user.seasonalFees ?? 0),
             feesDeposited: String(user.feesDeposited ?? 0),
+            months: "1",
             method: "cash",
             note: "",
         });
@@ -191,15 +185,10 @@ export default function RenewMembership() {
 
     const onRenew = async () => {
         if (!foundStudent) return;
-        const { seasonalFees, feesDeposited, method, note } = renewForm.getValues();
+        const { seasonalFees, feesDeposited, method, note, months } = renewForm.getValues();
         const seasonal = parseRupeeInt(seasonalFees);
         const deposit = parseRupeeInt(feesDeposited);
-        const monthsNum = membershipMonthsFromDeposit(seasonal, deposit);
-
-        if (!monthsNum) {
-            toast({ title: "Validation Error", description: "Check your fee calculation.", variant: "destructive" });
-            return;
-        }
+        const monthsNum = parseInt(months as unknown as string, 10) || 1;
 
         try {
             // SYNC LOCAL OVERRIDE: Update cumulative months and fees for the strict validity logic
@@ -390,11 +379,21 @@ export default function RenewMembership() {
                                                   <Input 
                                                       value={fees.feesDeposited}
                                                       onChange={e => updateFeeInput(s, "feesDeposited", e.target.value)}
-                                                      className={cn("h-10 bg-white border-slate-200 text-sm pl-7", months === null && "border-red-200 focus:ring-red-500")} 
+                                                      className="h-10 bg-white border-slate-200 text-sm pl-7" 
                                                   />
                                                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
                                                 </div>
-                                                {months && <p className="text-[10px] font-bold text-emerald-500">{months} Month(s) Extension</p>}
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Duration (Mn)</Label>
+                                                <div className="relative">
+                                                  <Input 
+                                                      value={fees.months}
+                                                      onChange={e => updateFeeInput(s, "months", e.target.value)}
+                                                      className="h-10 bg-white border-slate-200 text-sm pl-7 font-black text-primary" 
+                                                  />
+                                                  <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                                                </div>
                                             </div>
                                             <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                                 <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Method</Label>
@@ -506,6 +505,10 @@ export default function RenewMembership() {
                                                   <Input className="rounded-xl border-slate-200" {...renewForm.register("feesDeposited")} />
                                               </div>
                                             </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-bold text-slate-500">Duration (Months)</Label>
+                                                <Input type="number" min="1" className="rounded-xl border-slate-200 font-bold text-primary" {...renewForm.register("months")} />
+                                            </div>
 
                                             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                                               <div className="flex items-center justify-between text-sm">
@@ -513,8 +516,8 @@ export default function RenewMembership() {
                                                 <span className="font-bold text-primary">
                                                   {(() => {
                                                     const v = renewForm.watch();
-                                                    const m = membershipMonthsFromDeposit(parseRupeeInt(v.seasonalFees), parseRupeeInt(v.feesDeposited));
-                                                    if (!m || !foundStudent.activeUntil) return "—";
+                                                    const m = parseInt(v.months as unknown as string, 10) || 1;
+                                                    if (!foundStudent.activeUntil) return "—";
                                                     return format(addDays(new Date(foundStudent.activeUntil), m * 30), "dd MMM, yyyy");
                                                   })()}
                                                 </span>

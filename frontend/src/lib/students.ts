@@ -175,8 +175,14 @@ export async function paySeasonalFee(payload: {
     studentId: string;
     amount: number;
     paymentMethod: "CASH" | "UPI" | "CARD";
+    months?: number;
 }): Promise<void> {
-    await api.post(`/students/${payload.studentId}/pay-seasonal-fee`, payload);
+    await api.post(`/memberships/${payload.studentId}/renew`, {
+        months: payload.months || 1,
+        amount: payload.amount,
+        method: payload.paymentMethod,
+        note: "Seasonal Fee Settlement",
+    });
 }
 
 /** View type combining student data with its metadata */

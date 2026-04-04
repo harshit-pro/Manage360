@@ -237,7 +237,7 @@ export default function PendingFees() {
                             </span>
                           </div>
                         ) : (
-                          <Badge variant="ghost" className="text-slate-300 font-bold italic">No Validity Set</Badge>
+                          <Badge variant="outline" className="text-slate-300 font-bold border-slate-100 italic">No Validity Set</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -320,92 +320,94 @@ export default function PendingFees() {
 
       {/* Payment Processing Dialog */}
       <Dialog open={!!clearingStudent} onOpenChange={(o) => (!o && !isSubmitting) && setClearingStudent(null)}>
-        <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-3xl">
-          <div className="bg-amber-500 p-8 text-white relative overflow-hidden">
+        <DialogContent className="max-w-md rounded-3xl md:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-3xl sm:h-auto h-[90vh] flex flex-col">
+          <div className="bg-amber-500 p-6 md:p-8 text-white relative overflow-hidden flex-shrink-0">
             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
             <DialogHeader>
-              <DialogTitle className="text-2xl font-black flex items-center gap-3 text-white">
-                <Wallet className="h-7 w-7" />
+              <DialogTitle className="text-xl md:text-2xl font-black flex items-center gap-3 text-white">
+                <Wallet className="h-6 w-6 md:h-7 md:w-7" />
                 Settle Payment
               </DialogTitle>
-              <DialogDescription className="text-amber-50 font-medium opacity-90">
+              <DialogDescription className="text-amber-50 font-medium opacity-90 text-xs md:text-sm">
                 Authorized entry of fee collection for student records.
               </DialogDescription>
             </DialogHeader>
           </div>
           
-          {clearingStudent && (
-            <div className="p-8 space-y-8 bg-white">
-              <div className="flex items-center gap-4 p-4 rounded-3xl bg-slate-50/50 border border-slate-100">
-                <div className="h-14 w-14 rounded-2xl bg-amber-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-200">
-                  {clearingStudent.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h4 className="font-black text-slate-900">{clearingStudent.name}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-[10px] font-bold h-5 px-1.5">{clearingStudent.seatNo}</Badge>
-                    <span className="text-[10px] font-bold text-slate-400">ID: {regOf(clearingStudent)}</span>
+          <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 md:space-y-8 bg-white">
+            {clearingStudent && (
+              <>
+                <div className="flex items-center gap-4 p-3 md:p-4 rounded-2xl md:rounded-3xl bg-slate-50/50 border border-slate-100">
+                  <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-amber-500 flex items-center justify-center text-white font-black text-lg md:text-xl shadow-lg shadow-amber-200">
+                    {clearingStudent.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-black text-slate-900 truncate">{clearingStudent.name}</h4>
+                    <div className="flex items-center gap-2 mt-0.5 md:mt-1">
+                      <Badge variant="outline" className="text-[9px] md:text-[10px] font-bold h-4 md:h-5 px-1 md:px-1.5">{clearingStudent.seatNo}</Badge>
+                      <span className="text-[9px] md:text-[10px] font-bold text-slate-400">ID: {regOf(clearingStudent)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Collection Mode</span>
-                  <span className="text-amber-600 font-black">Full Due Clearance</span>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { id: "CASH", icon: Banknote, label: "Cash" },
-                    { id: "UPI", icon: Smartphone, label: "UPI" },
-                    { id: "CARD", icon: CreditCard, label: "Card" }
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => setPaymentMethod(mode.id as any)}
-                      className={cn(
-                        "flex flex-col items-center justify-center py-4 rounded-3xl border-2 transition-all gap-2",
-                        paymentMethod === mode.id 
-                          ? "bg-amber-500 border-amber-500 text-white shadow-xl shadow-amber-200" 
-                          : "bg-white border-slate-100 text-slate-400 hover:border-amber-200 hover:text-amber-500"
-                      )}
-                    >
-                      <mode.icon className="h-6 w-6" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">{mode.label}</span>
-                    </button>
-                  ))}
-                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">Collection Mode</span>
+                    <span className="text-amber-600 font-black text-xs md:text-sm">Full Due Clearance</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 md:gap-3">
+                    {[
+                      { id: "CASH", icon: Banknote, label: "Cash" },
+                      { id: "UPI", icon: Smartphone, label: "UPI" },
+                      { id: "CARD", icon: CreditCard, label: "Card" }
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        onClick={() => setPaymentMethod(mode.id as any)}
+                        className={cn(
+                          "flex flex-col items-center justify-center py-3 md:py-4 rounded-2xl md:rounded-3xl border-2 transition-all gap-1 md:gap-2",
+                          paymentMethod === mode.id 
+                            ? "bg-amber-500 border-amber-500 text-white shadow-xl shadow-amber-200" 
+                            : "bg-white border-slate-100 text-slate-400 hover:border-amber-200 hover:text-amber-500"
+                        )}
+                      >
+                        <mode.icon className="h-5 w-5 md:h-6 md:w-6" />
+                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{mode.label}</span>
+                      </button>
+                    ))}
+                  </div>
 
-                <div className="mt-8 p-6 rounded-[2rem] bg-slate-950 text-white flex items-center justify-between relative overflow-hidden group">
-                   <div className="absolute inset-0 bg-gradient-to-r from-amber-600/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                   <div className="relative z-10 flex flex-col">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Collected Amount</span>
-                      <span className="text-3xl font-black">₹{pendingAmount(clearingStudent).toLocaleString("en-IN")}</span>
-                   </div>
-                   <div className="relative z-10 h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center">
-                      <CheckCircle2 className="h-6 w-6 text-amber-500" />
-                   </div>
+                  <div className="mt-4 md:mt-8 p-4 md:p-6 rounded-2xl md:rounded-[2rem] bg-slate-950 text-white flex items-center justify-between relative overflow-hidden group">
+                     <div className="absolute inset-0 bg-gradient-to-r from-amber-600/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                     <div className="relative z-10 flex flex-col">
+                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500">Collected Amount</span>
+                        <span className="text-2xl md:text-3xl font-black">₹{pendingAmount(clearingStudent).toLocaleString("en-IN")}</span>
+                     </div>
+                     <div className="relative z-10 h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-white/10 flex items-center justify-center">
+                        <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-amber-500" />
+                     </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="p-8 pt-0 bg-white gap-3">
+              </>
+            )}
+          </div>
+          <DialogFooter className="p-5 md:p-8 pt-0 bg-white gap-2 md:gap-3 flex-shrink-0">
             <Button 
                 variant="outline" 
                 onClick={() => setClearingStudent(null)} 
                 disabled={isSubmitting} 
-                className="h-14 flex-1 rounded-2xl border-slate-200 font-black text-slate-400 hover:bg-slate-50"
+                className="h-12 md:h-14 flex-1 rounded-xl md:rounded-2xl border-slate-200 font-bold md:font-black text-slate-400 hover:bg-slate-50 text-sm"
             >
               Cancel
             </Button>
             <Button 
                 onClick={handleClearDues} 
                 disabled={isSubmitting} 
-                className="h-14 flex-[2] rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-lg shadow-xl shadow-amber-200"
+                className="h-12 md:h-14 flex-[2] rounded-xl md:rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold md:font-black text-sm md:text-lg shadow-xl shadow-amber-200"
             >
               {isSubmitting ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
               ) : (
                 "Confirm Payment"
               )}

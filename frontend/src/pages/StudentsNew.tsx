@@ -31,7 +31,8 @@ import {
   AlertCircle,
   Gem,
   Lock,
-  Wallet
+  Wallet,
+  Clock
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -105,14 +106,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     const watchedMembershipMonths = watch("membershipMonths") as number;
 
     const resolvedMembershipMonths = useMemo(() => {
-        const seasonal = Number(watchedSeasonalFees) || 0;
-        const dep = Number(watchedFeesDeposited) || 0;
-        if (dep > 0) {
-            const m = membershipMonthsFromDeposit(seasonal, dep);
-            if (m !== null) return m;
-        }
         return Number(watchedMembershipMonths) || 1;
-    }, [watchedSeasonalFees, watchedFeesDeposited, watchedMembershipMonths]);
+    }, [watchedMembershipMonths]);
 
     const [isCheckingSeat, setIsCheckingSeat] = useState(false);
     const [seatStatus, setSeatStatus] = useState<"available" | "taken" | "checking" | null>(null);
@@ -176,12 +171,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 let amount: number;
                 
                 if (data.feesDeposited > 0) {
-                    const m = membershipMonthsFromDeposit(seasonal, data.feesDeposited);
-                    if (m === null) {
-                        toast({ title: "Invalid fees", description: "Deposit must divide evenly by fee.", variant: "destructive" });
-                        return;
-                    }
-                    months = m;
+                    months = data.membershipMonths;
                     amount = data.feesDeposited;
                 } else {
                     months = data.membershipMonths;
@@ -384,6 +374,14 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                                 <SelectItem value="card">Card Payment</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Membership Duration (Months)</Label>
+                                        <div className="relative">
+                                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                          <Input type="number" min="1" className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary" {...register("membershipMonths", { valueAsNumber: true })} />
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground pl-1">Sets the validity period for this payment.</p>
                                     </div>
                                 </div>
                             </section>
