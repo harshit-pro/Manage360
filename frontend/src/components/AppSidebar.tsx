@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -141,9 +142,17 @@ function NavItem({
   const { open } = useSidebar();
   const location = useLocation();
 
-  const isChildActive =
-    "children" in item &&
-    item.children?.some((c) => routeMatches(location, c.url));
+  const isChildActive = useMemo(() => 
+    "children" in item && item.children?.some((c) => routeMatches(location, c.url)),
+    [item, location]
+  );
+
+  const [isOpen, setIsOpen] = useState(isChildActive);
+  
+  // Sync state with route changes (e.g. if we navigate to a child from outside the sidebar)
+  useEffect(() => {
+    if (isChildActive) setIsOpen(true);
+  }, [isChildActive]);
 
   // Simple link item (no children)
   if (!('children' in item)) {
@@ -254,7 +263,7 @@ function NavItem({
 
   // Expanded: show collapsible with sub-items
   return (
-    <Collapsible defaultOpen={isChildActive} className="group/collapsible">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
@@ -275,13 +284,13 @@ function NavItem({
             <span className="flex-1 text-left ml-3">{item.title}</span>
             <ChevronDown className={cn(
               "h-4 w-4 shrink-0 transition-transform duration-300",
-              "group-data-[state=open]/collapsible:rotate-180",
+              isOpen ? "rotate-180" : "",
               isChildActive ? "opacity-100" : "opacity-40"
             )} />
           </SidebarMenuButton>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="data-[state=closed]:animate-slide-up data-[state=open]:animate-slide-down">
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
           <SidebarMenuSub className="ml-8 border-l border-primary/10 space-y-0.5 mt-1 py-1">
             {item.children.map((child) => (
               <SidebarMenuSubItem key={child.url}>

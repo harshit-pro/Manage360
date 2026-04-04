@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, isPast } from "date-fns";
-import { listAllStudents, paySeasonalFee, StudentView } from "@/lib/students";
+import { listAllStudents, paySeasonalFee, StudentView, setStudentMeta } from "@/lib/students";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -94,7 +94,15 @@ export default function PendingFees() {
         amount: pendingAmount(clearingStudent),
         paymentMethod: paymentMethod,
       });
-      toast({ title: "Payment Recorded", description: `Successfully cleared dues for ${clearingStudent.name}.` });
+      await fetchStudents();
+      
+      // Update local metadata for consistent state across tabs
+      const currentFees = clearingStudent.meta?.feesDeposited || clearingStudent.feesDeposited || 0;
+      setStudentMeta(clearingStudent.id, { 
+          feesDeposited: currentFees + pendingAmount(clearingStudent),
+          currentValidityMonths: (clearingStudent.meta?.currentValidityMonths || 0) + 1 
+      });
+
       setClearingStudent(null);
       await fetchStudents();
     } catch (e: any) {
