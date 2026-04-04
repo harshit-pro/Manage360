@@ -17,6 +17,7 @@
 
     --primary: 173 80% 32%;
     --primary-foreground: 0 0% 100%;
+    --primary-rgb: 16, 147, 137;
 
     --secondary: 215 25% 93%;
     --secondary-foreground: 222 47% 18%;
@@ -72,6 +73,7 @@
 
     --primary: 173 72% 44%;
     --primary-foreground: 222 47% 6%;
+    --primary-rgb: 31, 193, 175;
 
     --secondary: 217 19% 18%;
     --secondary-foreground: 210 40% 96%;

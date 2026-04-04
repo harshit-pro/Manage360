@@ -19,6 +19,7 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { currentUser, getLibraryName } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -49,16 +50,20 @@ import type { Location } from "react-router-dom";
 
 /** Match route including query (e.g. /students?tab=all). */
 function routeMatches(loc: Pick<Location, "pathname" | "search">, to: string): boolean {
-  const base = "http://local";
-  const target = new URL(to, base);
-  if (loc.pathname !== target.pathname) return false;
-  if (!target.search) return true;
-  const want = new URLSearchParams(target.search);
-  const have = new URLSearchParams(loc.search);
-  for (const [k, v] of want.entries()) {
-    if (have.get(k) !== v) return false;
+  try {
+    const base = "http://local";
+    const target = new URL(to, base);
+    if (loc.pathname !== target.pathname) return false;
+    if (!target.search) return true;
+    const want = new URLSearchParams(target.search);
+    const have = new URLSearchParams(loc.search);
+    for (const [k, v] of want.entries()) {
+      if (have.get(k) !== v) return false;
+    }
+    return true;
+  } catch (e) {
+    return loc.pathname === to;
   }
-  return true;
 }
 
 const menuGroups = [
@@ -145,19 +150,25 @@ function NavItem({
     const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
 
     if (!open) {
-      // Collapsed: show icon with tooltip
       return (
         <SidebarMenuItem>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SidebarMenuButton asChild isActive={isActive}>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive}
+                className={cn(
+                  "relative h-10 w-10 transition-all duration-300",
+                  isActive && "bg-primary/15 text-primary shadow-[0_0_20px_-12px_rgba(var(--primary-rgb),0.5)]"
+                )}
+              >
                 <NavLink to={item.url}>
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span>{item.title}</span>
+                  <item.icon className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300", isActive && "scale-110")} />
+                  <span className="sr-only">{item.title}</span>
                 </NavLink>
               </SidebarMenuButton>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium">
+            <TooltipContent side="right" className="font-semibold bg-primary text-primary-foreground border-none">
               {item.title}
             </TooltipContent>
           </Tooltip>
@@ -167,10 +178,27 @@ function NavItem({
 
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton asChild isActive={isActive}>
-          <NavLink to={item.url}>
-            <item.icon className="h-4 w-4 shrink-0" />
-            <span>{item.title}</span>
+        <SidebarMenuButton
+          asChild
+          isActive={isActive}
+          className={cn(
+            "relative px-4 py-2.5 transition-all duration-300 group overflow-hidden",
+            isActive
+              ? "bg-primary/10 text-primary font-semibold shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),0.1)]"
+              : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <NavLink to={item.url} className="flex items-center gap-3 w-full">
+            <div className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300",
+              isActive ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted/50 group-hover:bg-muted"
+            )}>
+              <item.icon className="h-4 w-4 shrink-0" />
+            </div>
+            <span className="flex-1">{item.title}</span>
+            {isActive && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary rounded-r-full" />
+            )}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -179,34 +207,44 @@ function NavItem({
 
   // Group item with children
   if (!open) {
-    // Collapsed: show icon with tooltip, clicking navigates to first child
     return (
       <SidebarMenuItem>
         <Tooltip>
           <TooltipTrigger asChild>
-            <SidebarMenuButton isActive={isChildActive ?? false}>
-              <item.icon className="h-4 w-4 shrink-0" />
+            <SidebarMenuButton
+              isActive={isChildActive ?? false}
+              className={cn(
+                "h-10 w-10 transition-all duration-300",
+                isChildActive && "bg-primary/15 text-primary"
+              )}
+            >
+              <item.icon className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300", isChildActive && "scale-110")} />
               <span>{item.title}</span>
             </SidebarMenuButton>
           </TooltipTrigger>
-          <TooltipContent side="right" align="start" className="p-0 min-w-[140px]">
-            <div className="flex flex-col py-1">
-              <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">
+          <TooltipContent side="right" align="start" className="p-1 min-w-[160px] border shadow-xl backdrop-blur-md">
+            <div className="flex flex-col gap-0.5">
+              <p className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] mb-1">
                 {item.title}
               </p>
-              {item.children.map((child) => (
-                <NavLink
-                  key={child.url}
-                  to={child.url}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors ${isActive ? "text-primary font-medium" : "text-foreground"
-                    }`
-                  }
-                >
-                  <child.icon className="h-3.5 w-3.5 shrink-0" />
-                  {child.title}
-                </NavLink>
-              ))}
+              {item.children.map((child) => {
+                const isItemActive = routeMatches(location, child.url);
+                return (
+                  <NavLink
+                    key={child.url}
+                    to={child.url}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all duration-200",
+                      isItemActive
+                        ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/10"
+                        : "hover:bg-accent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <child.icon className="h-3.5 w-3.5 shrink-0" />
+                    {child.title}
+                  </NavLink>
+                );
+              })}
             </div>
           </TooltipContent>
         </Tooltip>
@@ -219,24 +257,44 @@ function NavItem({
     <Collapsible defaultOpen={isChildActive} className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton isActive={isChildActive ?? false} className="w-full">
-            <item.icon className="h-4 w-4 shrink-0" />
-            <span className="flex-1 text-left">{item.title}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+          <SidebarMenuButton
+            isActive={isChildActive ?? false}
+            className={cn(
+              "px-4 py-2.5 transition-all duration-300 group",
+              isChildActive
+                ? "bg-primary/5 text-primary font-semibold"
+                : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <div className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300",
+              isChildActive ? "bg-primary/15 text-primary" : "bg-muted/50 group-hover:bg-muted"
+            )}>
+              <item.icon className="h-4 w-4 shrink-0" />
+            </div>
+            <span className="flex-1 text-left ml-3">{item.title}</span>
+            <ChevronDown className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-300",
+              "group-data-[state=open]/collapsible:rotate-180",
+              isChildActive ? "opacity-100" : "opacity-40"
+            )} />
           </SidebarMenuButton>
         </CollapsibleTrigger>
 
-        <CollapsibleContent>
-          <SidebarMenuSub>
+        <CollapsibleContent className="data-[state=closed]:animate-slide-up data-[state=open]:animate-slide-down">
+          <SidebarMenuSub className="ml-8 border-l border-primary/10 space-y-0.5 mt-1 py-1">
             {item.children.map((child) => (
               <SidebarMenuSubItem key={child.url}>
                 <SidebarMenuSubButton asChild>
                   <NavLink
                     to={child.url}
                     className={({ isActive }) =>
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : ""
+                      cn(
+                        "relative flex items-center gap-3 px-3 py-2 text-sm transition-all duration-200 rounded-lg",
+                        isActive
+                          ? "bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_rgba(var(--primary-rgb),0.1)]"
+                          : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      )
                     }
                   >
                     <child.icon className="h-3.5 w-3.5 shrink-0" />
@@ -258,20 +316,21 @@ export function AppSidebar() {
   const libraryName = getLibraryName();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="group-data-[side=left]:border-r-0">
       {/* Brand header */}
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-2 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary font-bold text-sm text-primary-foreground shadow-md">
-            M
+      <SidebarHeader className="border-b border-primary/5 bg-gradient-to-b from-card to-card/50">
+        <div className="flex items-center gap-3 px-2 py-4">
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground shadow-[0_8px_16px_-6px_rgba(var(--primary-rgb),0.4)]">
+            <span className="relative z-10">M</span>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
           </div>
           {open && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-base font-bold leading-none tracking-tight text-foreground">
-                Manage360
+            <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
+              <span className="text-lg font-extrabold leading-none tracking-tight text-foreground bg-clip-text">
+                Manage<span className="text-primary">360</span>
               </span>
               {user && (
-                <span className="text-xs text-muted-foreground truncate mt-0.5">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">
                   {user.name || user.email || "Admin"}
                 </span>
               )}
@@ -281,10 +340,10 @@ export function AppSidebar() {
 
         {/* Library name badge — only when expanded and OWNER */}
         {open && libraryName && user?.role === "OWNER" && (
-          <div className="px-2 pb-1">
+          <div className="px-2 pb-3 animate-in fade-in slide-in-from-top-1 duration-500">
             <Badge
               variant="outline"
-              className="w-full justify-center text-xs font-normal bg-primary/5 border-primary/20 text-primary truncate"
+              className="w-full justify-center py-1 text-[10px] font-bold uppercase tracking-wider bg-primary/5 border-primary/10 text-primary transition-all duration-300 hover:bg-primary/10"
             >
               {libraryName}
             </Badge>
@@ -293,16 +352,16 @@ export function AppSidebar() {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className="px-1 py-2">
+      <SidebarContent className="px-3 py-4 gap-4">
         {menuGroups.map((group) => (
-          <SidebarGroup key={group.label} className="py-1">
+          <SidebarGroup key={group.label} className="p-0">
             {open && (
-              <SidebarGroupLabel className="px-2 mb-1">
+              <SidebarGroupLabel className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
                 {group.label}
               </SidebarGroupLabel>
             )}
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1">
                 {group.items.map((item) => (
                   <NavItem key={item.title} item={item} />
                 ))}
@@ -314,10 +373,17 @@ export function AppSidebar() {
 
       {/* Footer */}
       {open && (
-        <SidebarFooter className="border-t border-sidebar-border">
-          <p className="py-2 text-center text-[11px] text-muted-foreground">
-            © {new Date().getFullYear()} Manage360
-          </p>
+        <SidebarFooter className="border-t border-primary/5 bg-card/50 px-4 py-4">
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest text-center">
+              © {new Date().getFullYear()} Manage360
+            </p>
+            <div className="flex items-center justify-center gap-1.5 opacity-50">
+              <div className="h-1 w-1 rounded-full bg-primary" />
+              <div className="h-1 w-1 rounded-full bg-primary/60" />
+              <div className="h-1 w-1 rounded-full bg-primary/30" />
+            </div>
+          </div>
         </SidebarFooter>
       )}
     </Sidebar>
