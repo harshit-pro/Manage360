@@ -11,9 +11,11 @@ export interface StudentMeta {
     seasonalFees?: number;
     feesDeposited?: number;
     currentValidityMonths?: number; // Critical for enforcing user-requested validity logic
+    photo?: string; // Base64 encoded profile picture
 }
 
 export interface Student {
+    photo: string;
     id: string;
     regNo: string;
     name: string;

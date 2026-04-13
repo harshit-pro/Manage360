@@ -36,8 +36,11 @@ import {
     RefreshCw,
     MessageSquare,
     ArrowRight,
-    CheckCircle2
+    CheckCircle2,
+    Camera
 } from "lucide-react";
+import PhotoUpload from "@/components/PhotoUpload";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const schema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -51,6 +54,7 @@ const schema = z.object({
     dateOfJoining: z.string().optional(),
     seasonalFees: z.coerce.number().nonnegative().optional(),
     feesDeposited: z.coerce.number().nonnegative().optional(),
+    photo: z.string().optional(),
 });
 
 type EditFormOutput = z.output<typeof schema>;
@@ -77,7 +81,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         monthlyRate?: string,
         pending?: string,
         period?: string,
-        joiningDate?: string
+        joiningDate?: string,
+        photo?: string
     } | null>(null);
 
     const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<EditFormInput, any, EditFormOutput>({
@@ -126,9 +131,11 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         }
     }, [student, reset, isReAdmission]);
 
+    const watchedName = watch("name");
     const watchedJoiningDate = watch("dateOfJoining");
     const watchedSeasonal = Number(watch("seasonalFees")) || 0;
     const watchedDeposited = Number(watch("feesDeposited")) || 0;
+    const watchedPhoto = watch("photo");
 
     const durationInfo = (() => {
         if (!watchedJoiningDate || watchedSeasonal <= 0) return null;
@@ -157,13 +164,19 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                // We reset the cumulative counter to only the current deposit.
                setStudentMeta(student.id, { 
                    currentValidityMonths: months,
-                   feesDeposited: deposited
+                   feesDeposited: deposited,
+                   photo: data.photo
                });
             } else if (deposited > 0) {
                // Normal payment/renewal adds to the existing cycle
                setStudentMeta(student.id, { 
                    currentValidityMonths: existingMonths + months,
-                   feesDeposited: existingFees + deposited
+                   feesDeposited: existingFees + deposited,
+                   photo: data.photo
+               });
+            } else {
+               setStudentMeta(student.id, {
+                   photo: data.photo
                });
             }
 
@@ -212,7 +225,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     monthlyRate: `₹${seasonal.toLocaleString("en-IN")}`,
                     pending: `₹${Math.max(0, seasonal - deposited).toLocaleString("en-IN")}`,
                     period: `${months} Month(s)`,
-                    joiningDate: format(new Date(joiningDate), "dd MMM, yyyy")
+                    joiningDate: format(new Date(joiningDate), "dd MMM, yyyy"),
+                    photo: data.photo
                 });
             } else {
                 toast({ title: "Profile Updated", description: "The student profile has been synchronized successfully." });
@@ -252,30 +266,46 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 tracking-tight">Identity Details</h3>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-name" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Legal Name *</Label>
-                                <Input id="edit-name" className="h-12 rounded-2xl border-slate-200" {...register("name")} />
-                                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-gender" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Gender *</Label>
-                                <Select value={watch("gender")} onValueChange={(v) => setValue("gender", v as any)}>
-                                    <SelectTrigger id="edit-gender" className="h-12 rounded-2xl border-slate-200"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-2xl shadow-xl">
-                                        <SelectItem value="MALE">Male</SelectItem>
-                                        <SelectItem value="FEMALE">Female</SelectItem>
-                                        <SelectItem value="OTHER">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-aadharNo" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Aadhar Verification</Label>
-                                <div className="relative">
-                                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                    <Input id="edit-aadharNo" className="h-12 pl-11 rounded-2xl border-slate-200" placeholder="12-digit UID" {...register("aadharNo")} />
+                        <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                            <PhotoUpload 
+                                value={watchedPhoto} 
+                                onChange={(val) => setValue("photo", val)} 
+                                name={watchedName}
+                                className="shrink-0"
+                            />
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-name" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Legal Name *</Label>
+                                    <Input id="edit-name" className="h-12 rounded-2xl border-slate-200" {...register("name")} />
+                                    {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-gender" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Gender *</Label>
+                                    <Select value={watch("gender")} onValueChange={(v) => setValue("gender", v as any)}>
+                                        <SelectTrigger id="edit-gender" className="h-12 rounded-2xl border-slate-200"><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl shadow-xl">
+                                            <SelectItem value="MALE">Male</SelectItem>
+                                            <SelectItem value="FEMALE">Female</SelectItem>
+                                            <SelectItem value="OTHER">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-aadharNo" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Aadhar Verification</Label>
+                                    <div className="relative">
+                                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                        <Input id="edit-aadharNo" className="h-12 pl-11 rounded-2xl border-slate-200" placeholder="12-digit UID" {...register("aadharNo")} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-mobileNo" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Mobile No</Label>
+                                    <div className="relative">
+                                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                        <Input id="edit-mobileNo" className="h-12 pl-11 rounded-2xl border-slate-200" {...register("mobileNo")} />
+                                    </div>
                                 </div>
                             </div>
+                        </div>
                             <div className="space-y-2">
                                 <Label htmlFor="dateOfJoining" className={cn("text-[10px] font-bold uppercase tracking-wider pl-1", isReAdmission ? "text-primary" : "text-slate-400")}>
                                     {isReAdmission ? "New Admission Date" : "Joining Date (Locked)"}
@@ -294,7 +324,6 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                     />
                                 </div>
                             </div>
-                        </div>
                     </section>
 
                     <section className="space-y-6">
@@ -415,8 +444,12 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                         <div className="bg-primary p-8 text-white relative overflow-hidden">
                             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
                             <div className="relative z-10 flex flex-col items-center text-center">
-                                <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
-                                    <RefreshCw className="h-10 w-10 text-primary" />
+                                <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl overflow-hidden border-4 border-white ring-4 ring-primary/20">
+                                    {showSuccess?.photo ? (
+                                        <img src={showSuccess.photo} alt="Avatar" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <RefreshCw className="h-10 w-10 text-primary" />
+                                    )}
                                 </div>
                                 <DialogTitle className="text-2xl font-black text-white">
                                     {showSuccess?.isReAdmission ? "Re-admission Success!" : "Update Complete!"}
@@ -488,5 +521,6 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 </Dialog>
             </DialogContent>
         </Dialog>
-    );
+    ); 
 }
+

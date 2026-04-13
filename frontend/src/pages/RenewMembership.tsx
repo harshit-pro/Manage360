@@ -28,12 +28,14 @@ import {
   Wallet,
   Smartphone,
   Hash,
-  Gem
+  Gem,
+  Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 import { MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -605,9 +607,14 @@ export default function RenewMembership() {
                         
                         <div className="relative z-10 flex flex-col gap-4">
                             <div className="flex items-center justify-between">
-                                <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center text-primary border border-white/10 shadow-inner">
-                                  <User className="h-7 w-7" />
-                                </div>
+                            <div className="h-14 w-14 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center border border-white/10 shadow-inner">
+                              <Avatar className="h-full w-full rounded-none">
+                                <AvatarImage src={foundStudent.photo} className="object-cover" />
+                                <AvatarFallback className="bg-transparent text-primary text-xl font-black">
+                                  {foundStudent.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
                                 <Badge className={cn(
                                     "h-6 px-3 rounded-lg font-black text-[9px] uppercase tracking-widest border-none shadow-lg",
                                     isReAdmission ? "bg-amber-500 text-white animate-pulse" : "bg-emerald-500 text-white"

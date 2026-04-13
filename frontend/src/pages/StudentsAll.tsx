@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function StudentsAll({ embedded = false }: { embedded?: boolean }) {
     const [q, setQ] = useState("");
@@ -163,8 +164,13 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                                     <TableRow key={s.id} className="group hover:bg-white transition-colors border-slate-100 duration-200">
                                         <TableCell className="py-5 pl-8">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary/10 to-blue-500/10 flex items-center justify-center text-primary font-black shadow-inner">
-                                                  {s.name.charAt(0).toUpperCase()}
+                                                <div className="h-11 w-11 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
+                                                  <Avatar className="h-full w-full rounded-none">
+                                                    <AvatarImage src={s.photo} className="object-cover" />
+                                                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-blue-500/10 text-primary font-black">
+                                                      {s.name.charAt(0).toUpperCase()}
+                                                    </AvatarFallback>
+                                                  </Avatar>
                                                 </div>
                                                 <div className="flex flex-col">
                                                   <span className="font-bold text-slate-900 leading-none mb-1">{s.name}</span>
@@ -258,8 +264,13 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                             <div key={s.id} className="relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50/50 p-5 group">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-14 w-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary font-black border border-slate-100">
-                                          {s.name.charAt(0).toUpperCase()}
+                                        <div className="h-14 w-14 rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100">
+                                          <Avatar className="h-full w-full rounded-none">
+                                            <AvatarImage src={s.photo} className="object-cover" />
+                                            <AvatarFallback className="flex items-center justify-center text-primary font-black bg-slate-50">
+                                              {s.name.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-slate-900">{s.name}</h3>

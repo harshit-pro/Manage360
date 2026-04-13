@@ -33,10 +33,13 @@ import {
   Lock,
   Wallet,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Camera
 } from "lucide-react";
+import PhotoUpload from "@/components/PhotoUpload";
 import { Badge } from "@/components/ui/badge";
 import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +65,7 @@ const schema = z.object({
     isEnrolled: z.boolean().default(true),
     membershipMonths: z.coerce.number().int().positive().default(1),
     paymentMethod: z.enum(["cash", "upi", "card"]).default("cash"),
+    photo: z.string().optional(),
 });
 
 export type NewStudentInput = z.infer<typeof schema>;
@@ -127,6 +131,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     const watchedSeasonalFees = watch("seasonalFees") as number;
     const watchedFeesDeposited = watch("feesDeposited") as number;
     const watchedMembershipMonths = watch("membershipMonths") as number;
+    const watchedPhoto = watch("photo");
 
     const resolvedMembershipMonths = useMemo(() => {
         return Number(watchedMembershipMonths) || 1;
@@ -214,7 +219,12 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 // Update metadata for accurate validity tracking in UI and cumulative fees
                 setStudentMeta(student.id, { 
                     currentValidityMonths: months,
-                    feesDeposited: amount 
+                    feesDeposited: amount,
+                    photo: data.photo
+                });
+            } else {
+                setStudentMeta(student.id, {
+                    photo: data.photo
                 });
             }
 
@@ -240,7 +250,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 monthlyRate: `₹${data.seasonalFees.toLocaleString("en-IN")}`,
                 deposited: `₹${data.feesDeposited.toLocaleString("en-IN")}`,
                 pending: `₹${Math.max(0, data.seasonalFees - data.feesDeposited).toLocaleString("en-IN")}`,
-                period: `${resolvedMembershipMonths} Month(s)`
+                period: `${resolvedMembershipMonths} Month(s)`,
+                photo: data.photo
             });
 
             toast({ title: "Registration Successful", description: `${data.name} is now a member with correct validity.` });
@@ -272,6 +283,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 joiningDate={watchedJoiningDate} 
                 months={resolvedMembershipMonths} 
                 activeUntil={activeUntilPreview} 
+                photo={watchedPhoto}
               />
             </div>
 
@@ -294,37 +306,46 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                     </div>
                                     <h3 className="text-lg font-bold text-slate-800">Identity Details</h3>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Legal Name</Label>
-                                        <Input placeholder="e.g. Aryan Malhotra" className="h-12 rounded-2xl border-slate-200" {...register("name")} />
-                                        {errors.name && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.name.message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Aadhar Identification</Label>
-                                        <div className="relative">
-                                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                          <Input placeholder="12-digit UID" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("aadharNo")} />
+
+                                <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                                    <PhotoUpload 
+                                      value={watchedPhoto} 
+                                      onChange={(val) => setValue("photo", val)} 
+                                      name={watchedName}
+                                      className="shrink-0"
+                                    />
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Legal Name</Label>
+                                            <Input placeholder="e.g. Aryan Malhotra" className="h-12 rounded-2xl border-slate-200" {...register("name")} />
+                                            {errors.name && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.name.message}</p>}
                                         </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Gender Specification</Label>
-                                        <Select defaultValue={"male"} onValueChange={(v) => setValue("gender", v as any)}>
-                                            <SelectTrigger className="h-12 rounded-2xl border-slate-200 font-medium">
-                                                <SelectValue placeholder="Select" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="male">Male Member</SelectItem>
-                                                <SelectItem value="female">Female Member</SelectItem>
-                                                <SelectItem value="other">Universal/Other</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Primary Mobile No</Label>
-                                        <div className="relative">
-                                          <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                          <Input placeholder="+91 00000 00000" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("mobile")} />
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Aadhar Identification</Label>
+                                            <div className="relative">
+                                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                              <Input placeholder="12-digit UID" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("aadharNo")} />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Gender Specification</Label>
+                                            <Select defaultValue={"male"} onValueChange={(v) => setValue("gender", v as any)}>
+                                                <SelectTrigger className="h-12 rounded-2xl border-slate-200 font-medium">
+                                                    <SelectValue placeholder="Select" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="male">Male Member</SelectItem>
+                                                    <SelectItem value="female">Female Member</SelectItem>
+                                                    <SelectItem value="other">Universal/Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Primary Mobile No</Label>
+                                            <div className="relative">
+                                              <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                              <Input placeholder="+91 00000 00000" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("mobile")} />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -457,6 +478,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                             joiningDate={watchedJoiningDate} 
                             months={resolvedMembershipMonths} 
                             activeUntil={activeUntilPreview} 
+                            photo={watchedPhoto}
                         />
                     </div>
                     <div className="p-4 rounded-3xl border border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1 text-center">
@@ -551,7 +573,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     );
 }
 
-function RegistrationSummaryCard({ name, seat, joiningDate, months, activeUntil }: any) {
+function RegistrationSummaryCard({ name, seat, joiningDate, months, activeUntil, photo }: any) {
     return (
         <Card className="rounded-[2.5rem] border-emerald-100 bg-emerald-50/20 shadow-xl overflow-hidden">
             <CardHeader className="p-6 bg-emerald-600 text-white">
@@ -562,8 +584,12 @@ function RegistrationSummaryCard({ name, seat, joiningDate, months, activeUntil 
             </CardHeader>
             <CardContent className="p-6 space-y-6">
                 <div className="flex flex-col items-center text-center p-4">
-                  <div className="h-20 w-20 rounded-[2rem] bg-white shadow-inner flex items-center justify-center text-3xl font-black text-emerald-600 mb-3 border border-emerald-100">
-                    {name ? name.charAt(0).toUpperCase() : "?"}
+                  <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-3xl font-black text-emerald-600 mb-4 border-4 border-white ring-4 ring-emerald-100 overflow-hidden">
+                    {photo ? (
+                       <img src={photo} alt="Preview" className="h-full w-full object-cover" />
+                    ) : (
+                       name ? name.charAt(0).toUpperCase() : "?"
+                    )}
                   </div>
                   <h4 className="text-xl font-black text-slate-900 truncate w-full">{name || "New Student"}</h4>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Preview Card</p>
