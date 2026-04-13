@@ -42,6 +42,7 @@ export default function PendingFees() {
   const [clearingStudent, setClearingStudent] = useState<StudentView | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "UPI" | "CARD">("CASH");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settledStudent, setSettledStudent] = useState<{ name: string, phone: string, amount: string, validity: string } | null>(null);
   const { toast } = useToast();
 
   const fetchStudents = async () => {
@@ -96,17 +97,30 @@ export default function PendingFees() {
         amount: pendingAmount(clearingStudent),
         paymentMethod: paymentMethod,
       });
-      await fetchStudents();
-      
-      // Update local metadata for consistent state across tabs
+
       const currentFees = clearingStudent.meta?.feesDeposited || clearingStudent.feesDeposited || 0;
+      const amountCleared = pendingAmount(clearingStudent);
+      const amountStr = `₹${amountCleared.toLocaleString("en-IN")}`;
+
       setStudentMeta(clearingStudent.id, { 
-          feesDeposited: currentFees + pendingAmount(clearingStudent),
+          feesDeposited: currentFees + amountCleared,
           currentValidityMonths: (clearingStudent.meta?.currentValidityMonths || 0) + 1 
       });
 
-      setClearingStudent(null);
       await fetchStudents();
+      
+      // Get the updated student to show correct validity in dialog
+      const all = await listAllStudents();
+      const updated = all.find(s => s.id === clearingStudent.id);
+      
+      setSettledStudent({
+          name: clearingStudent.name,
+          phone: clearingStudent.mobileNo,
+          amount: amountStr,
+          validity: updated?.activeUntil ? format(new Date(updated.activeUntil), "dd MMM, yyyy") : "N/A"
+      });
+
+      setClearingStudent(null);
     } catch (e: any) {
       toast({ 
         title: "Error", 
@@ -456,6 +470,62 @@ export default function PendingFees() {
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      {/* Settlement Success Dialog with WhatsApp Options */}
+      <Dialog open={!!settledStudent} onOpenChange={(o) => {
+          if (!o) setSettledStudent(null);
+      }}>
+          <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+              <div className="bg-amber-500 p-8 text-white relative overflow-hidden">
+                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                      <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
+                          <CheckCircle2 className="h-10 w-10 text-amber-500" />
+                      </div>
+                      <DialogTitle className="text-2xl font-black text-white">Payment Received!</DialogTitle>
+                      <DialogDescription className="text-amber-50 opacity-90 font-medium mt-1">
+                          Fees for {settledStudent?.name} have been settled.
+                      </DialogDescription>
+                  </div>
+              </div>
+              
+              <div className="p-8 space-y-6 bg-white">
+                  <div className="space-y-4">
+                      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex flex-col items-center gap-1 text-center">
+                          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest leading-none">Status Updated</span>
+                          <span className="text-xl font-black text-slate-900">Valid Until: {settledStudent?.validity}</span>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 text-center">Send confirmation to student</h4>
+                          <Button 
+                              onClick={() => {
+                                  if (!settledStudent) return;
+                                  sendWhatsApp({ 
+                                      phone: settledStudent.phone, 
+                                      message: waTemplates.settlementSuccess(settledStudent.name, settledStudent.amount, settledStudent.validity) 
+                                  });
+                              }}
+                              className="w-full h-16 rounded-2xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black flex items-center justify-center gap-3 border-none shadow-lg shadow-emerald-100"
+                          >
+                              <MessageSquare className="h-5 w-5" />
+                              Send Payment Receipt
+                          </Button>
+                      </div>
+                  </div>
+              </div>
+
+              <DialogFooter className="p-8 pt-0 bg-white">
+                  <Button 
+                      variant="ghost" 
+                      className="w-full h-12 rounded-xl font-bold text-slate-400"
+                      onClick={() => setSettledStudent(null)}
+                  >
+                      Close Dashboard
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
       </Dialog>
     </div>
   );

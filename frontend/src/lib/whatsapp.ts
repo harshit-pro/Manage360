@@ -55,9 +55,15 @@ export const waTemplates = {
     return `Hi ${name}, this is a reminder regarding a pending fee of ${amount} for your membership at ${library}.\n\nWe request you to clear the outstanding balance at your earliest convenience to maintain your active status.\n\nThank you!`;
   },
 
-  // 6. Generic Payment Receipt (Simple)
-  paymentSuccess: (name: string, amount: string) => {
+  // 6. Renewal Success
+  renewalSuccess: (name: string, amount: string, validity: string) => {
     const library = getLibraryName() || "our institute";
-    return `Hi ${name}, we have successfully received your payment of ${amount}. Your membership has been updated. Thank you!`;
+    return `Hi ${name}, your membership at ${library} has been successfully renewed!\n\nAmount Paid: ${amount}\nNew Validity: ${validity}\n\nThank you for your continued association!`;
+  },
+
+  // 7. Payment Settlement Success (Pending Fees)
+  settlementSuccess: (name: string, amount: string, validity: string) => {
+    const library = getLibraryName() || "our institute";
+    return `Hi ${name}, thank you for clearing your outstanding dues of ${amount} at ${library}.\n\nYour membership is now up to date.\nNew Validity: ${validity}\n\nThank you!`;
   }
 };
