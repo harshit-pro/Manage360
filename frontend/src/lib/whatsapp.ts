@@ -69,6 +69,42 @@ We look forward to having you with us. Please present this receipt if requested 
 Happy Studying! 📚`;
   },
 
+  // 2b. Re-admission Confirmation (Detailed)
+  readmission: (data: { 
+    name: string; 
+    regNo: string; 
+    seatNo: string; 
+    monthlyRate: string;
+    deposited: string;
+    pending: string;
+    period: string;
+    joiningDate: string;
+    validity: string;
+  }) => {
+    const library = getLibraryName() || "our institute";
+    return `*✨ Welcome Back! - ${library} ✨*
+
+Dear *${data.name}*, 
+
+We are delighted to have you back! Your re-admission has been processed successfully.
+
+*Membership Details:*
+━━━━━━━━━━━━━━━━━━━━
+🆔 *Reg No:* ${data.regNo}
+💺 *Seat No:* ${data.seatNo}
+📅 *Re-joined On:* ${data.joiningDate}
+⏳ *New Validity:* ${data.validity}
+🗓️ *Duration:* ${data.period}
+
+*Financial Summary:*
+━━━━━━━━━━━━━━━━━━━━
+💰 *Monthly Rate:* ${data.monthlyRate}
+✅ *Fees Paid:* ${data.deposited}
+⏳ *Balance Due:* ${data.pending}
+
+Your seat is now active. We wish you the best for your studies! 📚`;
+  },
+
   // 3. Payment / Invoice Receipt
   invoice: (name: string, amount: string, link: string) => {
     const library = getLibraryName() || "our institute";

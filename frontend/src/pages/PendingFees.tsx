@@ -96,7 +96,7 @@ export default function PendingFees() {
         studentId: clearingStudent.id,
         amount: pendingAmount(clearingStudent),
         paymentMethod: paymentMethod,
-        months: 0, // Dues clearance doesn't extend validity
+        months: 1, // Satisfies backend validation (>=1)
       });
 
       const currentFees = (clearingStudent.feesDeposited || 0);
