@@ -32,9 +32,19 @@ import {
   Gem,
   Lock,
   Wallet,
-  Clock
+  Clock,
+  MessageSquare
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const schema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -60,6 +70,7 @@ type NewStudentFormInput = z.input<typeof schema>;
 export default function StudentsNew({ embedded = false }: { embedded?: boolean }) {
     const { toast } = useToast();
     const nav = useNavigate();
+    const [registeredStudent, setRegisteredStudent] = useState<{ id: string, name: string, phone: string, seat: string, validity: string } | null>(null);
     const defaults = useMemo(() => ({
         membershipMonths: 1,
         seasonalFees: 500,
@@ -202,8 +213,18 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 sessionStorage.removeItem("cl.draftId");
             }
 
+
+            const activeUntil = activeUntilPreview ? format(activeUntilPreview, "dd MMM, yyyy") : "N/A";
+            setRegisteredStudent({
+                id: student.id,
+                name: data.name,
+                phone: data.mobile || "",
+                seat: data.seatNo,
+                validity: activeUntil
+            });
+
             toast({ title: "Registration Successful", description: `${data.name} is now a member with correct validity.` });
-            nav(embedded ? "/students?tab=all" : "/students");
+            // nav(embedded ? "/students?tab=all" : "/students"); // Handled by dialog close
         } catch (e: any) {
             const message = e?.response?.data?.message || e.message || String(e);
             toast({ title: "Registration Failed", description: message, variant: "destructive" });
@@ -425,6 +446,77 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                     </div>
                 </div>
             </div>
+
+            {/* Success Dialog with WhatsApp Options */}
+            <Dialog open={!!registeredStudent} onOpenChange={(o) => {
+                if (!o) {
+                    setRegisteredStudent(null);
+                    nav(embedded ? "/students?tab=all" : "/students");
+                }
+            }}>
+                <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+                    <div className="bg-emerald-600 p-8 text-white relative overflow-hidden">
+                        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
+                                <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black text-white">Registration Complete!</DialogTitle>
+                            <DialogDescription className="text-emerald-50 opacity-90 font-medium mt-1">
+                                {registeredStudent?.name} has been successfully enrolled.
+                            </DialogDescription>
+                        </div>
+                    </div>
+                    
+                    <div className="p-8 space-y-6 bg-white">
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 text-center">Send confirmation to student</h4>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Button 
+                                    onClick={() => {
+                                        if (!registeredStudent) return;
+                                        sendWhatsApp({ 
+                                            phone: registeredStudent.phone, 
+                                            message: waTemplates.registration(registeredStudent.name, registeredStudent.seat, registeredStudent.validity) 
+                                        });
+                                    }}
+                                    className="h-16 rounded-2xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black flex items-center justify-center gap-3 border-none shadow-lg shadow-emerald-100"
+                                >
+                                    <MessageSquare className="h-5 w-5" />
+                                    Send Reg. Receipt
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    onClick={() => {
+                                        if (!registeredStudent) return;
+                                        sendWhatsApp({ 
+                                            phone: registeredStudent.phone, 
+                                            message: waTemplates.welcome(registeredStudent.name) 
+                                        });
+                                    }}
+                                    className="h-16 rounded-2xl border-slate-200 font-bold flex items-center justify-center gap-3 hover:bg-slate-50"
+                                >
+                                    <User className="h-5 w-5 text-slate-400" />
+                                    Send Welcome Msg
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="p-8 pt-0 bg-white">
+                        <Button 
+                            variant="ghost" 
+                            className="w-full h-12 rounded-xl font-bold text-slate-400"
+                            onClick={() => {
+                                setRegisteredStudent(null);
+                                nav(embedded ? "/students?tab=all" : "/students");
+                            }}
+                        >
+                            Done, Go to Dashboard
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

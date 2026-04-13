@@ -23,9 +23,11 @@ import {
   Download,
   AlertCircle,
   Hash,
-  ArrowUpDown
+  ArrowUpDown,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -208,6 +210,15 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                                         </TableCell>
                                         <TableCell className="text-right pr-8">
                                             <div className="flex items-center justify-end gap-1">
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                onClick={() => sendWhatsApp({ phone: s.mobileNo, message: waTemplates.welcome(s.name) })} 
+                                                className="h-10 w-10 p-0 rounded-xl hover:bg-emerald-50 hover:text-emerald-600"
+                                                title="Chat via WhatsApp"
+                                              >
+                                                <MessageSquare className="h-4.5 w-4.5" />
+                                              </Button>
                                               <Button variant="ghost" size="sm" onClick={() => setSelected(s)} className="h-10 w-10 p-0 rounded-xl hover:bg-primary/5 hover:text-primary">
                                                 <Eye className="h-4.5 w-4.5" />
                                               </Button>
@@ -285,6 +296,14 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                                     <span className="text-[10px] text-slate-500 truncate max-w-[140px]">{s.address || "No address provided"}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => sendWhatsApp({ phone: s.mobileNo, message: waTemplates.welcome(s.name) })} 
+                                      className="h-10 w-10 p-0 rounded-2xl bg-white shadow-sm border border-emerald-100 text-emerald-600"
+                                    >
+                                      <MessageSquare className="h-4 w-4" />
+                                    </Button>
                                     <Button variant="ghost" size="sm" onClick={() => setSelected(s)} className="h-10 w-10 p-0 rounded-2xl bg-white shadow-sm border border-slate-100">
                                       <Eye className="h-4 w-4" />
                                     </Button>

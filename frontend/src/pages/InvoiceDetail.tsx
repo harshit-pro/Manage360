@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 
 const InvoiceDetail = () => {
   const { paymentId } = useParams();
@@ -123,6 +124,14 @@ const InvoiceDetail = () => {
     }
   };
 
+  const handleWhatsAppShare = () => {
+    if (!payment) return;
+    const amount = formatCurrency(payment.amount);
+    const link = window.location.href;
+    const message = waTemplates.invoice(payment.studentName, amount, link);
+    sendWhatsApp({ phone: payment.mobileNo, message });
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -187,6 +196,27 @@ const InvoiceDetail = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 rounded-lg border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
+              onClick={handleWhatsAppShare}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              <span className="hidden xs:inline">WhatsApp</span>
+            </Button>
             <Button
               size="sm"
               className="h-8 gap-1.5 rounded-lg border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"

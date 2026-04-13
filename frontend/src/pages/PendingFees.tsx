@@ -29,9 +29,11 @@ import {
   Calendar,
   MoreVertical,
   CheckCircle2,
-  ArrowRightCircle
+  ArrowRightCircle,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 
 export default function PendingFees() {
   const [q, setQ] = useState("");
@@ -255,20 +257,37 @@ export default function PendingFees() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button 
-                          onClick={() => setClearingStudent(s)}
-                          className="h-12 px-6 rounded-2xl bg-slate-950 text-white font-black text-xs gap-2 hover:bg-amber-500 transition-all shadow-lg active:scale-95 group-hover:shadow-amber-200"
-                        >
-                          Clear Dues
-                          <ArrowRightCircle className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button 
+                            onClick={() => setClearingStudent(s)}
+                            className="h-12 px-6 rounded-2xl bg-slate-950 text-white font-black text-xs gap-2 hover:bg-amber-500 transition-all shadow-lg active:scale-95 group-hover:shadow-amber-200"
+                          >
+                            Clear Dues
+                            <ArrowRightCircle className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              const amount = `₹${pendingAmount(s).toLocaleString("en-IN")}`;
+                              sendWhatsApp({
+                                phone: s.mobileNo,
+                                message: waTemplates.dueFees(s.name, amount)
+                              });
+                            }}
+                            className="h-12 w-12 rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                            title="Remind via WhatsApp"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-
+        
             {/* Mobile Cards View */}
             <div className="lg:hidden space-y-4 px-4">
               {pendingStudents.map((s) => (
@@ -309,13 +328,28 @@ export default function PendingFees() {
                           </div>
                         </div>
 
-                        <Button 
-                          onClick={() => setClearingStudent(s)}
-                          className="w-full h-16 rounded-[1.5rem] bg-slate-950 text-white font-black text-base shadow-2xl active:scale-95 transition-all gap-3"
-                        >
-                          Finalize Payment
-                          <ChevronRight className="h-5 w-5" />
-                        </Button>
+                        <div className="flex gap-3">
+                          <Button 
+                            onClick={() => setClearingStudent(s)}
+                            className="flex-1 h-16 rounded-[1.5rem] bg-slate-950 text-white font-black text-base shadow-2xl active:scale-95 transition-all gap-3"
+                          >
+                            Finalize Payment
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              const amount = `₹${pendingAmount(s).toLocaleString("en-IN")}`;
+                              sendWhatsApp({
+                                phone: s.mobileNo,
+                                message: waTemplates.dueFees(s.name, amount)
+                              });
+                            }}
+                            className="h-16 w-16 rounded-[1.5rem] border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center"
+                          >
+                            <MessageSquare className="h-6 w-6" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

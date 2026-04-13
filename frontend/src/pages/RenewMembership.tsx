@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
+import { MessageSquare } from "lucide-react";
 
 type FindForm = { email: string };
 type RenewForm = { seasonalFees: string; feesDeposited: string; months: string; method: "cash" | "upi" | "card"; note?: string };
@@ -432,9 +434,25 @@ export default function RenewMembership() {
                                               )}
                                             </Button>
                                             {!isPaid && (
-                                              <Button variant="outline" className="h-11 w-11 rounded-xl p-0 border-slate-200" onClick={() => window.location.href=`tel:${s.mobileNo}`}>
-                                                <TrendingDown className="h-4 w-4 rotate-[-45deg] text-slate-400" />
-                                              </Button>
+                                              <div className="flex gap-2">
+                                                <Button 
+                                                  variant="outline" 
+                                                  className="h-11 w-11 rounded-xl p-0 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" 
+                                                  onClick={() => {
+                                                    const expiry = s.activeUntil ? format(new Date(s.activeUntil), "dd MMM, yyyy") : "N/A";
+                                                    sendWhatsApp({
+                                                      phone: s.mobileNo,
+                                                      message: waTemplates.renewalReminder(s.name, expiry)
+                                                    });
+                                                  }}
+                                                  title="Remind via WhatsApp"
+                                                >
+                                                  <MessageSquare className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="outline" className="h-11 w-11 rounded-xl p-0 border-slate-200" onClick={() => window.location.href=`tel:${s.mobileNo}`}>
+                                                  <TrendingDown className="h-4 w-4 rotate-[-45deg] text-slate-400" />
+                                                </Button>
+                                              </div>
                                             )}
                                         </div>
                                     </div>
