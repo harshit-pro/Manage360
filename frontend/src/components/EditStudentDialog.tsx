@@ -153,11 +153,14 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
             const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
 
             if (isReAdmission) {
+               // Re-admission starts a fresh financial cycle. 
+               // We reset the cumulative counter to only the current deposit.
                setStudentMeta(student.id, { 
                    currentValidityMonths: months,
-                   feesDeposited: existingFees + deposited
+                   feesDeposited: deposited
                });
             } else if (deposited > 0) {
+               // Normal payment/renewal adds to the existing cycle
                setStudentMeta(student.id, { 
                    currentValidityMonths: existingMonths + months,
                    feesDeposited: existingFees + deposited

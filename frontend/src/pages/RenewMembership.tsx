@@ -167,12 +167,13 @@ export default function RenewMembership() {
     setRenewingIds((prev) => new Set(prev).add(student.id));
     try {
       // Update metadata for accurate validity tracking in UI and cumulative fees
-      const currentMonths = student.meta?.currentValidityMonths || 0;
-      const currentFees = student.meta?.feesDeposited || student.feesDeposited || 0;
+      const existingMonths = student.meta?.currentValidityMonths || 0;
+      const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
+      const isReAdmission = student.isExpired || !student.isEnrolled;
 
       setStudentMeta(student.id, {
-        currentValidityMonths: currentMonths + months,
-        feesDeposited: currentFees + deposit
+        currentValidityMonths: isReAdmission ? months : (existingMonths + months),
+        feesDeposited: isReAdmission ? deposit : (existingFees + deposit)
       });
 
       const updated = await renewMembership(student.id, {
@@ -274,8 +275,8 @@ export default function RenewMembership() {
       const currentFees = foundStudent.meta?.feesDeposited || foundStudent.feesDeposited || 0;
 
       setStudentMeta(foundStudent.id, {
-        currentValidityMonths: currentMonths + monthsNum,
-        feesDeposited: currentFees + deposit,
+        currentValidityMonths: isReAdmission ? monthsNum : (currentMonths + monthsNum),
+        feesDeposited: isReAdmission ? deposit : (currentFees + deposit),
         seasonalFees: seasonal // Persist the new rate in meta too
       });
 
