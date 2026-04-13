@@ -70,7 +70,19 @@ type NewStudentFormInput = z.input<typeof schema>;
 export default function StudentsNew({ embedded = false }: { embedded?: boolean }) {
     const { toast } = useToast();
     const nav = useNavigate();
-    const [registeredStudent, setRegisteredStudent] = useState<{ id: string, name: string, phone: string, seat: string, validity: string } | null>(null);
+    const [registeredStudent, setRegisteredStudent] = useState<{ 
+        id: string, 
+        name: string, 
+        phone: string, 
+        seat: string, 
+        validity: string,
+        regNo: string,
+        joiningDate: string,
+        monthlyRate: string,
+        deposited: string,
+        pending: string,
+        period: string
+    } | null>(null);
     const defaults = useMemo(() => ({
         membershipMonths: 1,
         seasonalFees: 500,
@@ -215,12 +227,20 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
 
             const activeUntil = activeUntilPreview ? format(activeUntilPreview, "dd MMM, yyyy") : "N/A";
+            const joiningDateStr = data.dateOfJoining ? format(new Date(data.dateOfJoining), "dd MMM, yyyy") : format(new Date(), "dd MMM, yyyy");
+            
             setRegisteredStudent({
                 id: student.id,
                 name: data.name,
                 phone: data.mobile || "",
                 seat: data.seatNo,
-                validity: activeUntil
+                validity: activeUntil,
+                regNo: student.regNo,
+                joiningDate: joiningDateStr,
+                monthlyRate: `₹${data.seasonalFees.toLocaleString("en-IN")}`,
+                deposited: `₹${data.feesDeposited.toLocaleString("en-IN")}`,
+                pending: `₹${Math.max(0, data.seasonalFees - data.feesDeposited).toLocaleString("en-IN")}`,
+                period: `${resolvedMembershipMonths} Month(s)`
             });
 
             toast({ title: "Registration Successful", description: `${data.name} is now a member with correct validity.` });
@@ -477,7 +497,17 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                         if (!registeredStudent) return;
                                         sendWhatsApp({ 
                                             phone: registeredStudent.phone, 
-                                            message: waTemplates.registration(registeredStudent.name, registeredStudent.seat, registeredStudent.validity) 
+                                            message: waTemplates.registration({
+                                                name: registeredStudent.name,
+                                                regNo: registeredStudent.regNo,
+                                                seatNo: registeredStudent.seat,
+                                                monthlyRate: registeredStudent.monthlyRate,
+                                                deposited: registeredStudent.deposited,
+                                                pending: registeredStudent.pending,
+                                                period: registeredStudent.period,
+                                                joiningDate: registeredStudent.joiningDate,
+                                                validity: registeredStudent.validity
+                                            })
                                         });
                                     }}
                                     className="h-16 rounded-2xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black flex items-center justify-center gap-3 border-none shadow-lg shadow-emerald-100"

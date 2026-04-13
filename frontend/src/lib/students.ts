@@ -178,7 +178,7 @@ export async function paySeasonalFee(payload: {
     months?: number;
 }): Promise<void> {
     await api.post(`/memberships/${payload.studentId}/renew`, {
-        months: payload.months || 1,
+        months: payload.months !== undefined ? payload.months : 1, // Respect 0 if provided
         amount: payload.amount,
         method: payload.paymentMethod,
         note: "Seasonal Fee Settlement",

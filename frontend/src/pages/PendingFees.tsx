@@ -96,15 +96,16 @@ export default function PendingFees() {
         studentId: clearingStudent.id,
         amount: pendingAmount(clearingStudent),
         paymentMethod: paymentMethod,
+        months: 0, // Dues clearance doesn't extend validity
       });
 
-      const currentFees = clearingStudent.meta?.feesDeposited || clearingStudent.feesDeposited || 0;
+      const currentFees = (clearingStudent.feesDeposited || 0);
       const amountCleared = pendingAmount(clearingStudent);
       const amountStr = `₹${amountCleared.toLocaleString("en-IN")}`;
 
       setStudentMeta(clearingStudent.id, { 
           feesDeposited: currentFees + amountCleared,
-          currentValidityMonths: (clearingStudent.meta?.currentValidityMonths || 0) + 1 
+          // We DO NOT update currentValidityMonths here to keep validity same
       });
 
       await fetchStudents();
@@ -483,18 +484,18 @@ export default function PendingFees() {
                       <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
                           <CheckCircle2 className="h-10 w-10 text-amber-500" />
                       </div>
-                      <DialogTitle className="text-2xl font-black text-white">Payment Received!</DialogTitle>
+                      <DialogTitle className="text-2xl font-black text-white">Dues Cleared!</DialogTitle>
                       <DialogDescription className="text-amber-50 opacity-90 font-medium mt-1">
-                          Fees for {settledStudent?.name} have been settled.
+                          The outstanding balance for {settledStudent?.name} has been settled.
                       </DialogDescription>
                   </div>
               </div>
               
               <div className="p-8 space-y-6 bg-white">
                   <div className="space-y-4">
-                      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex flex-col items-center gap-1 text-center">
-                          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest leading-none">Status Updated</span>
-                          <span className="text-xl font-black text-slate-900">Valid Until: {settledStudent?.validity}</span>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center gap-1 text-center">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Membership Status</span>
+                          <span className="text-lg font-black text-slate-900 italic">Validity: {settledStudent?.validity}</span>
                       </div>
 
                       <div className="space-y-3 pt-2">

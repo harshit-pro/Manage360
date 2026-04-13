@@ -31,10 +31,42 @@ export const waTemplates = {
     return `Hello ${name}! Welcome to ${library}. We are thrilled to have you join us. Please let us know if you need any assistance getting started.`;
   },
 
-  // 2. Registration Confirmation
-  registration: (name: string, seat: string, validity: string) => {
+  // 2. Registration Confirmation (Detailed)
+  registration: (data: { 
+    name: string; 
+    regNo: string; 
+    seatNo: string; 
+    monthlyRate: string;
+    deposited: string;
+    pending: string;
+    period: string;
+    joiningDate: string;
+    validity: string;
+  }) => {
     const library = getLibraryName() || "our institute";
-    return `Hi ${name}, your registration at ${library} is successful!\n\nSeat Assignment: ${seat}\nMembership Valid Until: ${validity}\n\nWe look forward to seeing you. Thank you for choosing us!`;
+    return `*✨ Registration Successful - ${library} ✨*
+
+Dear *${data.name}*, 
+
+Welcome to our library! Your registration has been processed successfully.
+
+*Member Details:*
+━━━━━━━━━━━━━━━━━━━━
+🆔 *Reg No:* ${data.regNo}
+💺 *Seat No:* ${data.seatNo}
+📅 *Joined On:* ${data.joiningDate}
+⏳ *Validity:* ${data.validity}
+🗓️ *Period:* ${data.period}
+
+*Financial Summary:*
+━━━━━━━━━━━━━━━━━━━━
+💰 *Monthly Rate:* ${data.monthlyRate}
+✅ *Fees Paid:* ${data.deposited}
+⏳ *Balance Due:* ${data.pending}
+
+We look forward to having you with us. Please present this receipt if requested at the counter.
+
+Happy Studying! 📚`;
   },
 
   // 3. Payment / Invoice Receipt
@@ -55,15 +87,39 @@ export const waTemplates = {
     return `Hi ${name}, this is a reminder regarding a pending fee of ${amount} for your membership at ${library}.\n\nWe request you to clear the outstanding balance at your earliest convenience to maintain your active status.\n\nThank you!`;
   },
 
-  // 6. Renewal Success
+  // 6. Renewal Confirmation (Detailed)
   renewalSuccess: (name: string, amount: string, validity: string) => {
     const library = getLibraryName() || "our institute";
-    return `Hi ${name}, your membership at ${library} has been successfully renewed!\n\nAmount Paid: ${amount}\nNew Validity: ${validity}\n\nThank you for your continued association!`;
+    return `*✨ Membership Renewed - ${library} ✨*
+
+Dear *${name}*, 
+
+Your membership has been successfully extended. Thank you for your continued support!
+
+*Transaction Details:*
+━━━━━━━━━━━━━━━━━━━━
+✅ *Amount Paid:* ${amount}
+📅 *New Validity:* ${validity}
+📊 *Status:* Active Member
+
+We appreciate your association with us. Happy studying! 📚`;
   },
 
-  // 7. Payment Settlement Success (Pending Fees)
+  // 7. Dues Clearance Confirmation (Detailed)
   settlementSuccess: (name: string, amount: string, validity: string) => {
     const library = getLibraryName() || "our institute";
-    return `Hi ${name}, thank you for clearing your outstanding dues of ${amount} at ${library}.\n\nYour membership is now up to date.\nNew Validity: ${validity}\n\nThank you!`;
+    return `*✨ Fees Settled - ${library} ✨*
+
+Dear *${name}*, 
+
+Thank you for clearing your outstanding dues. Your account is now fully updated.
+
+*Payment Details:*
+━━━━━━━━━━━━━━━━━━━━
+✅ *Settled Amount:* ${amount}
+⏳ *Current Validity:* ${validity}
+📊 *Payment Status:* All Dues Cleared
+
+Thank you for your cooperation! 📚`;
   }
 };
