@@ -277,10 +277,21 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dateOfJoining" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Admission Date</Label>
+                                <Label htmlFor="dateOfJoining" className={cn("text-[10px] font-bold uppercase tracking-wider pl-1", isReAdmission ? "text-primary" : "text-slate-400")}>
+                                    {isReAdmission ? "New Admission Date" : "Joining Date (Locked)"}
+                                </Label>
                                 <div className="relative">
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                    <Input id="dateOfJoining" type="date" className="h-12 pl-11 rounded-2xl border-slate-200" {...register("dateOfJoining")} />
+                                    <Calendar className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4", isReAdmission ? "text-primary/50" : "text-slate-300")} />
+                                    <Input 
+                                        id="dateOfJoining" 
+                                        type="date" 
+                                        disabled={!isReAdmission}
+                                        className={cn(
+                                            "h-12 pl-11 rounded-2xl border-slate-200",
+                                            !isReAdmission && "bg-slate-50 text-slate-500 cursor-not-allowed border-dashed"
+                                        )} 
+                                        {...register("dateOfJoining")} 
+                                    />
                                 </div>
                             </div>
                         </div>
