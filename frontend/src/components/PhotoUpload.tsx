@@ -1,8 +1,14 @@
 import React, { useCallback, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Camera, X, Upload, Loader2 } from "lucide-react";
+import { Camera, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PhotoUploadProps {
   value?: string;
@@ -13,6 +19,9 @@ interface PhotoUploadProps {
 
 export default function PhotoUpload({ value, onChange, name, className }: PhotoUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+
   const initials = name
     ? name
         .split(" ")
@@ -32,17 +41,11 @@ export default function PhotoUpload({ value, onChange, name, className }: PhotoU
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size should be less than 5MB.");
-        return;
-      }
-
       setIsUploading(true);
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-          // Comprehensive compression using Canvas
           const canvas = document.createElement("canvas");
           const MAX_WIDTH = 400;
           const MAX_HEIGHT = 400;
@@ -66,7 +69,6 @@ export default function PhotoUpload({ value, onChange, name, className }: PhotoU
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
 
-          // Get quality-controlled base64
           const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
           onChange(dataUrl);
           setIsUploading(false);
@@ -74,6 +76,7 @@ export default function PhotoUpload({ value, onChange, name, className }: PhotoU
         img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
+      e.target.value = "";
     },
     [onChange]
   );
@@ -95,24 +98,57 @@ export default function PhotoUpload({ value, onChange, name, className }: PhotoU
             </div>
           )}
 
-          <label 
-            className={cn(
-               "absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white",
-               !value && "opacity-100 bg-black/5"
-            )}
-          >
-            <Camera className="h-8 w-8 mb-1" />
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {value ? "Change" : "Upload"}
-            </span>
-            <input 
-               type="file" 
-               className="hidden" 
-               accept="image/*" 
-               onChange={handleFileChange}
-               disabled={isUploading}
-            />
-          </label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                type="button"
+                className={cn(
+                   "absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white outline-none",
+                   !value && "opacity-100 bg-black/5"
+                )}
+                disabled={isUploading}
+              >
+                <Camera className="h-8 w-8 mb-1" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-center px-2">
+                  {value ? "Change Photo" : "Add Photo"}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48 rounded-2xl p-2 shadow-2xl border-slate-100">
+              <DropdownMenuItem 
+                className="rounded-xl py-3 cursor-pointer gap-3 font-bold text-slate-700"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 text-primary" />
+                Upload from System
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="rounded-xl py-3 cursor-pointer gap-3 font-bold text-slate-700"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera className="h-4 w-4 text-emerald-500" />
+                Take Photo (Camera)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <input 
+             ref={fileInputRef}
+             type="file" 
+             className="hidden" 
+             accept="image/*" 
+             onChange={handleFileChange}
+             disabled={isUploading}
+          />
+          <input 
+             ref={cameraInputRef}
+             type="file" 
+             className="hidden" 
+             accept="image/*" 
+             capture="environment"
+             onChange={handleFileChange}
+             disabled={isUploading}
+          />
         </div>
 
         {value && (
@@ -120,7 +156,7 @@ export default function PhotoUpload({ value, onChange, name, className }: PhotoU
             type="button"
             variant="destructive"
             size="icon"
-            className="absolute -top-2 -right-2 h-8 w-8 rounded-full shadow-lg animate-in zoom-in duration-300"
+            className="absolute -top-2 -right-2 h-8 w-8 rounded-full shadow-lg animate-in zoom-in duration-300 z-20"
             onClick={() => onChange("")}
           >
             <X className="h-4 w-4" />
