@@ -142,26 +142,29 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                             />
                         </div>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Button 
                               variant={sortBy === "newest" ? "default" : "outline"} 
                               onClick={() => setSortBy("newest")}
-                              className="h-14 rounded-2xl px-6 font-bold gap-2"
+                              className="h-10 sm:h-14 rounded-xl sm:rounded-2xl px-3 sm:px-6 text-xs sm:text-base font-bold gap-2"
                             >
                                 <Clock className="h-4 w-4" />
-                                Newest
+                                <span className="hidden xs:inline">Newest</span>
+                                <span className="xs:hidden">New</span>
                             </Button>
                             <Button 
                               variant={sortBy === "name" ? "default" : "outline"} 
                               onClick={() => setSortBy("name")}
-                              className="h-14 rounded-2xl px-6 font-bold gap-2"
+                              className="h-10 sm:h-14 rounded-xl sm:rounded-2xl px-3 sm:px-6 text-xs sm:text-base font-bold gap-2"
                             >
                                 <ArrowUpDown className="h-4 w-4" />
-                                Alphabetical
+                                <span className="hidden xs:inline">Alphabetical</span>
+                                <span className="xs:hidden">Alpha</span>
                             </Button>
-                            <Button className="h-14 rounded-2xl px-6 font-bold shadow-xl shadow-primary/20 gap-2">
+                            <Button className="h-10 sm:h-14 rounded-xl sm:rounded-2xl px-3 sm:px-6 text-xs sm:text-base font-bold shadow-xl shadow-primary/20 gap-2">
                                 <Download className="h-4 w-4" />
-                                Export
+                                <span className="hidden xs:inline">Export</span>
+                                <span className="xs:hidden">Exp</span>
                             </Button>
                         </div>
                     </div>

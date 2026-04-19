@@ -117,20 +117,24 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
                                 className="h-12 rounded-2xl border-slate-200 pl-11 shadow-sm focus:ring-emerald-500/20"
                             />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button 
                             variant={sortBy === "newest" ? "default" : "outline"}
                             onClick={() => setSortBy("newest")}
-                            className="rounded-xl font-bold gap-2"
+                            className="h-10 sm:h-12 rounded-xl px-4 font-bold gap-2 text-xs sm:text-sm"
                           >
-                            <Clock className="h-4 w-4" /> Newest First
+                            <Clock className="h-4 w-4" /> 
+                            <span className="hidden xs:inline">Newest First</span>
+                            <span className="xs:hidden">Newest</span>
                           </Button>
                           <Button 
                             variant={sortBy === "name" ? "default" : "outline"}
                             onClick={() => setSortBy("name")}
-                            className="rounded-xl font-bold gap-2"
+                            className="h-10 sm:h-12 rounded-xl px-4 font-bold gap-2 text-xs sm:text-sm"
                           >
-                            <ArrowUpDown className="h-4 w-4" /> Alphabetical
+                            <ArrowUpDown className="h-4 w-4" /> 
+                            <span className="hidden xs:inline">Alphabetical</span>
+                            <span className="xs:hidden">Alpha</span>
                           </Button>
                         </div>
                     </div>

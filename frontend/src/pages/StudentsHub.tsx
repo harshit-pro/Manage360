@@ -69,8 +69,8 @@ export default function StudentsHub() {
         onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}
         className="w-full space-y-6 sm:space-y-8"
       >
-        <div className="flex items-center lg:justify-start w-full overflow-x-auto scrollbar-hide pb-2">
-          <TabsList className="h-auto w-fit flex flex-nowrap gap-2 rounded-[1.5rem] bg-slate-100/50 p-2 shadow-inner border border-slate-200/50 backdrop-blur-sm min-w-max">
+        <div className="flex items-center lg:justify-start w-full overflow-x-auto sm:overflow-x-visible scrollbar-hide pb-2">
+          <TabsList className="h-auto w-full sm:w-fit flex flex-nowrap gap-1 sm:gap-2 rounded-2xl sm:rounded-[1.5rem] bg-slate-100/50 p-1.5 sm:p-2 shadow-inner border border-slate-200/50 backdrop-blur-sm">
             {[
               { id: "add", label: "New Enrollment", icon: UserPlus, badge: 0 },
               { id: "drafts", label: "Drafts", icon: FileText, badge: draftBadge },
@@ -80,10 +80,10 @@ export default function StudentsHub() {
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className={`group relative h-12 rounded-2xl px-5 py-3 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-2xl whitespace-nowrap ${t.id === "drafts" ? "data-[state=active]:bg-amber-500" : ""}`}
+                className={`group relative flex-1 sm:flex-none h-10 sm:h-12 rounded-xl sm:rounded-2xl px-2 sm:px-5 py-2 sm:py-3 text-[9px] sm:text-xs font-black uppercase tracking-tight sm:tracking-widest transition-all data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-2xl whitespace-nowrap ${t.id === "drafts" ? "data-[state=active]:bg-amber-500" : ""}`}
               >
-                <t.icon className="mr-2 h-4 w-4 shrink-0 transition-transform group-active:scale-90" aria-hidden />
-                <span className="relative z-10">{t.label}</span>
+                <t.icon className="sm:mr-2 h-4 w-4 shrink-0 transition-transform group-active:scale-90" aria-hidden />
+                <span className="hidden xs:inline relative z-10">{t.label}</span>
                 {t.badge > 0 && (
                   <span className="ml-1.5 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-400 text-amber-950 text-[9px] font-black">
                     {t.badge}
