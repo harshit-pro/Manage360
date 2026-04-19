@@ -81,8 +81,8 @@ export default function PhotoUpload({ value, onChange, name, className }: PhotoU
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>
       <div className="relative group">
-        <div className="h-32 w-32 rounded-[2.5rem] overflow-hidden ring-4 ring-slate-100 ring-offset-4 transition-all group-hover:ring-primary/50 relative">
-          <Avatar className="h-full w-full rounded-none">
+        <div className="h-32 w-32 rounded-full overflow-hidden ring-4 ring-slate-100 ring-offset-4 transition-all group-hover:ring-primary/50 relative shadow-2xl bg-white">
+          <Avatar className="h-full w-full">
             <AvatarImage src={value} className="object-cover" />
             <AvatarFallback className="text-3xl font-black bg-slate-50 text-slate-300">
               {initials}

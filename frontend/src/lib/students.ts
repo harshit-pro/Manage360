@@ -99,7 +99,9 @@ function normalizeStudent(raw: any): Student {
     const dateExpired = activeUntil ? new Date(activeUntil) < todayStart : true;
     const backendSaysExpired = m ? m.status === "EXPIRED" : raw.isExpired;
 
-    return { ...raw, activeUntil, feesDeposited, isExpired: backendSaysExpired || dateExpired, membership: m, meta };
+    const photo = raw.photo || meta.photo || "";
+
+    return { ...raw, photo, activeUntil, feesDeposited, isExpired: backendSaysExpired || dateExpired, membership: m, meta };
 }
 
 /** Fetch a single student by ID */
@@ -143,6 +145,7 @@ export async function createStudent(payload: {
     seasonalFees: number;
     feesDeposited?: number;
     dateOfJoining: string;
+    photo?: string;
 }): Promise<Student> {
     const response = await api.post("/students", payload);
     return normalizeStudent(response.data);

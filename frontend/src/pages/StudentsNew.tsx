@@ -48,6 +48,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+// import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 
 const schema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -85,7 +86,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
         monthlyRate: string,
         deposited: string,
         pending: string,
-        period: string
+        period: string,
+        photo?: string
     } | null>(null);
     const defaults = useMemo(() => ({
         membershipMonths: 1,
@@ -190,6 +192,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 gender: data.gender.toUpperCase(),
                 seasonalFees: data.seasonalFees,
                 feesDeposited: 0, // Explicitly 0 here
+                photo: data.photo,
             });
 
             // 2. Process the formal membership payment

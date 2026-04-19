@@ -133,17 +133,20 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
                                     return (
                                         <TableRow key={s.id} className="group hover:bg-emerald-50/30 transition-all duration-300">
                                             <TableCell className="py-6 pl-10">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200 group-hover:border-emerald-500 transition-all duration-300 transform group-hover:scale-110 group-hover:rotate-3">
-                                                      <Avatar className="h-full w-full rounded-none">
+                                                <div 
+                                                    className="flex items-center gap-4 cursor-pointer group/item"
+                                                    onClick={() => setSelected(s)}
+                                                >
+                                                    <div className="h-12 w-12 rounded-full overflow-hidden bg-white flex items-center justify-center border-2 border-slate-100 ring-2 ring-emerald-500/10 shadow-sm group-hover/item:ring-emerald-500/30 transition-all duration-300 transform group-hover/item:scale-105 group-hover/item:rotate-2">
+                                                      <Avatar className="h-full w-full">
                                                         <AvatarImage src={s.photo} className="object-cover" />
-                                                        <AvatarFallback className="bg-slate-100 text-slate-900 font-bold group-hover:bg-emerald-600 group-hover:text-white">
+                                                        <AvatarFallback className="bg-gradient-to-br from-white to-slate-50 text-slate-900 font-bold group-hover/item:text-emerald-600">
                                                           {s.name.charAt(0).toUpperCase()}
                                                         </AvatarFallback>
                                                       </Avatar>
                                                     </div>
                                                     <div className="flex flex-col">
-                                                      <span className="font-bold text-slate-900 text-base">{s.name}</span>
+                                                      <span className="font-bold text-slate-900 text-base group-hover/item:text-emerald-600 transition-colors">{s.name}</span>
                                                       <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400 font-medium whitespace-nowrap">
                                                         <MapPin className="h-3 w-3" />
                                                         {s.address || "No address"}
@@ -203,17 +206,20 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
                             <Card key={s.id} className="rounded-3xl border-slate-100 shadow-sm overflow-hidden">
                                 <CardContent className="p-5">
                                     <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-14 w-14 rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100 flex items-center justify-center">
-                                              <Avatar className="h-full w-full rounded-none">
+                                        <div 
+                                            className="flex items-center gap-4 cursor-pointer"
+                                            onClick={() => setSelected(s)}
+                                        >
+                                            <div className="h-14 w-14 rounded-full overflow-hidden bg-white shadow-lg border-2 border-white ring-4 ring-emerald-50/50 flex items-center justify-center transition-transform group-hover:scale-105 duration-300">
+                                              <Avatar className="h-full w-full">
                                                 <AvatarImage src={s.photo} className="object-cover" />
-                                                <AvatarFallback className="text-emerald-600 font-black flex items-center justify-center bg-slate-50">
+                                                <AvatarFallback className="text-emerald-600 font-black flex items-center justify-center bg-white text-xl">
                                                   {s.name.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                               </Avatar>
                                             </div>
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-slate-900 truncate">{s.name}</h3>
+                                                <h3 className="font-bold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">{s.name}</h3>
                                                 <p className="text-xs text-slate-400 font-mono">{regOf(s)}</p>
                                             </div>
                                         </div>

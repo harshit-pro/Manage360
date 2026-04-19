@@ -191,6 +191,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 gender: data.gender,
                 seasonalFees: seasonal,
                 dateOfJoining: joiningDate,
+                photo: data.photo,
                 ...(isReAdmission ? { isEnrolled: true } : {}),
             });
 
@@ -250,11 +251,23 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             <Gem className="h-4 w-4" />
                             Elite Admission
                         </div>
-                        <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
-                            <UserPlus className="h-8 w-8 text-primary" />
-                            {isReAdmission ? "Re-Admission Protocol" : "Update Profile"}
-                        </DialogTitle>
-                        <p className="text-slate-400 font-medium italic text-sm">Synchronizing membership records with central core.</p>
+                        <div className="flex items-center gap-4">
+                            <div className="h-14 w-14 rounded-full overflow-hidden bg-white/10 border-2 border-white/20 shadow-inner flex items-center justify-center shrink-0">
+                                <Avatar className="h-full w-full">
+                                    <AvatarImage src={student?.photo} className="object-cover" />
+                                    <AvatarFallback className="bg-transparent text-white font-black text-xl">
+                                        {student?.name?.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                            <div className="space-y-1">
+                                <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+                                    <UserPlus className="h-8 w-8 text-primary" />
+                                    {isReAdmission ? "Re-Admission Protocol" : "Update Profile"}
+                                </DialogTitle>
+                                <p className="text-slate-400 font-medium italic text-sm">Synchronizing membership records with central core.</p>
+                            </div>
+                        </div>
                     </div>
                 </DialogHeader>
 
@@ -271,7 +284,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 value={watchedPhoto} 
                                 onChange={(val) => setValue("photo", val)} 
                                 name={watchedName}
-                                className="shrink-0"
+                                className="shrink-0 rounded-full"
                             />
                             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                                 <div className="space-y-2">
@@ -444,7 +457,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                         <div className="bg-primary p-8 text-white relative overflow-hidden">
                             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
                             <div className="relative z-10 flex flex-col items-center text-center">
-                                <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl overflow-hidden border-4 border-white ring-4 ring-primary/20">
+                                <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border-4 border-white ring-8 ring-white/10">
                                     {showSuccess?.photo ? (
                                         <img src={showSuccess.photo} alt="Avatar" className="h-full w-full object-cover" />
                                     ) : (

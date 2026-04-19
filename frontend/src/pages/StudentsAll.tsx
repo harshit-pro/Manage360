@@ -163,17 +163,20 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                                 ) : sortedStudents.map((s) => (
                                     <TableRow key={s.id} className="group hover:bg-white transition-colors border-slate-100 duration-200">
                                         <TableCell className="py-5 pl-8">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-11 w-11 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
-                                                  <Avatar className="h-full w-full rounded-none">
+                                            <div 
+                                                className="flex items-center gap-3 cursor-pointer group/item"
+                                                onClick={() => setSelected(s)}
+                                            >
+                                                <div className="h-11 w-11 rounded-full overflow-hidden bg-white flex items-center justify-center border-2 border-slate-100 ring-2 ring-primary/10 shadow-sm group-hover/item:ring-primary/30 transition-all duration-300">
+                                                  <Avatar className="h-full w-full">
                                                     <AvatarImage src={s.photo} className="object-cover" />
-                                                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-blue-500/10 text-primary font-black">
+                                                    <AvatarFallback className="bg-gradient-to-br from-slate-50 to-slate-100 text-primary font-black text-xs">
                                                       {s.name.charAt(0).toUpperCase()}
                                                     </AvatarFallback>
                                                   </Avatar>
                                                 </div>
                                                 <div className="flex flex-col">
-                                                  <span className="font-bold text-slate-900 leading-none mb-1">{s.name}</span>
+                                                  <span className="font-bold text-slate-900 leading-none mb-1 group-hover/item:text-primary transition-colors">{s.name}</span>
                                                   <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{s.mobileNo || "No Mobile"}</span>
                                                 </div>
                                             </div>
@@ -263,17 +266,20 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                         {sortedStudents.map((s) => (
                             <div key={s.id} className="relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50/50 p-5 group">
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-14 w-14 rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100">
-                                          <Avatar className="h-full w-full rounded-none">
+                                    <div 
+                                        className="flex items-center gap-4 cursor-pointer"
+                                        onClick={() => setSelected(s)}
+                                    >
+                                        <div className="h-14 w-14 rounded-full overflow-hidden bg-white shadow-lg border-2 border-white ring-4 ring-slate-100 transition-transform group-hover:scale-105 duration-300">
+                                          <Avatar className="h-full w-full">
                                             <AvatarImage src={s.photo} className="object-cover" />
-                                            <AvatarFallback className="flex items-center justify-center text-primary font-black bg-slate-50">
+                                            <AvatarFallback className="flex items-center justify-center text-primary font-black bg-slate-50 text-xl">
                                               {s.name.charAt(0).toUpperCase()}
                                             </AvatarFallback>
                                           </Avatar>
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-900">{s.name}</h3>
+                                            <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{s.name}</h3>
                                             <div className="flex items-center gap-2 mt-1">
                                               <Badge variant="outline" className="text-[9px] font-mono border-slate-200 text-slate-400 px-1.5 h-4 leading-none">{regOf(s)}</Badge>
                                               <span className="text-[10px] font-bold text-slate-400">Seat {s.seatNo}</span>

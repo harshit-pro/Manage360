@@ -607,8 +607,8 @@ export default function RenewMembership() {
                         
                         <div className="relative z-10 flex flex-col gap-4">
                             <div className="flex items-center justify-between">
-                            <div className="h-14 w-14 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center border border-white/10 shadow-inner">
-                              <Avatar className="h-full w-full rounded-none">
+                            <div className="h-14 w-14 rounded-full overflow-hidden bg-white/10 ring-4 ring-white/10 border-2 border-white/20 flex items-center justify-center shadow-inner">
+                              <Avatar className="h-full w-full">
                                 <AvatarImage src={foundStudent.photo} className="object-cover" />
                                 <AvatarFallback className="bg-transparent text-primary text-xl font-black">
                                   {foundStudent.name.charAt(0).toUpperCase()}

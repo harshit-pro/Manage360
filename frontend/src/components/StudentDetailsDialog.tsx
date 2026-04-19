@@ -86,8 +86,8 @@ export default function StudentDetailsDialog({ open, onOpenChange, student }: Pr
                       </Button>
                     </div>
 
-                    <div className="h-20 w-20 sm:h-28 sm:w-28 rounded-[1.75rem] overflow-hidden bg-white shadow-2xl flex items-center justify-center shrink-0 relative z-10 border-4 border-white ring-4 ring-black/5">
-                        <Avatar className="h-full w-full rounded-none">
+                    <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-full overflow-hidden bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center justify-center shrink-0 relative z-10 border-4 border-white ring-8 ring-white/10">
+                        <Avatar className="h-full w-full">
                             <AvatarImage src={student.photo} className="object-cover" />
                             <AvatarFallback className="text-4xl sm:text-5xl font-black bg-white" style={{ color: isActive ? '#10b981' : '#0f172a' }}>
                                 {student.name.charAt(0).toUpperCase()}
