@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { listAllStudents, searchStudents, Student, toggleEnrollment } from "@/lib/students";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,8 @@ import {
   AlertCircle,
   Hash,
   ArrowUpDown,
-  MessageSquare
+  MessageSquare,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
@@ -38,6 +40,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function StudentsAll({ embedded = false }: { embedded?: boolean }) {
+    const [searchParams] = useSearchParams();
+    const tab = searchParams.get("tab");
     const [q, setQ] = useState("");
     const [selected, setSelected] = useState<Student | null>(null);
     const [editTarget, setEditTarget] = useState<Student | null>(null);
@@ -45,6 +49,7 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
     const [tick, setTick] = useState(0);
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sortBy, setSortBy] = useState<"name" | "newest">("newest");
 
     useEffect(() => {
         const fetch = async () => {
@@ -60,12 +65,21 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
             }
         };
         fetch();
-    }, [q, tick]);
+    }, [q, tick, tab]);
 
-    // Alphabetical Sorting
+    // Intelligent Sorting
     const sortedStudents = useMemo(() => {
-        return [...students].sort((a, b) => a.name.localeCompare(b.name));
-    }, [students]);
+        if (sortBy === "name") {
+            return [...students].sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            return [...students].sort((a, b) => {
+                // Secondary sort by regNo if DOJ is missing
+                const dateA = a.dateOfJoining || "";
+                const dateB = b.dateOfJoining || "";
+                return dateB.localeCompare(dateA) || (b.regNo || "").localeCompare(a.regNo || "");
+            });
+        }
+    }, [students, sortBy]);
 
     const activeCount = useMemo(() => students.filter(s => s.isEnrolled !== false).length, [students]);
 
@@ -129,13 +143,25 @@ export default function StudentsAll({ embedded = false }: { embedded?: boolean }
                         </div>
                         
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" className="h-14 rounded-2xl px-6 border-slate-200 font-bold hover:bg-slate-50 gap-2">
-                                <Filter className="h-4 w-4" />
-                                Filter
+                            <Button 
+                              variant={sortBy === "newest" ? "default" : "outline"} 
+                              onClick={() => setSortBy("newest")}
+                              className="h-14 rounded-2xl px-6 font-bold gap-2"
+                            >
+                                <Clock className="h-4 w-4" />
+                                Newest
                             </Button>
-                            <Button className="h-14 rounded-2x rounded-2xl px-6 font-bold shadow-xl shadow-primary/20 gap-2">
+                            <Button 
+                              variant={sortBy === "name" ? "default" : "outline"} 
+                              onClick={() => setSortBy("name")}
+                              className="h-14 rounded-2xl px-6 font-bold gap-2"
+                            >
+                                <ArrowUpDown className="h-4 w-4" />
+                                Alphabetical
+                            </Button>
+                            <Button className="h-14 rounded-2xl px-6 font-bold shadow-xl shadow-primary/20 gap-2">
                                 <Download className="h-4 w-4" />
-                                Export List
+                                Export
                             </Button>
                         </div>
                     </div>

@@ -110,13 +110,15 @@ export async function getStudent(studentId: string): Promise<Student> {
     return normalizeStudent(response.data);
 }
 
-/** Fetch all students (paginated) */
+/** Fetch all students (increased default size to show all in lists/maps) */
 export async function listAllStudents(params?: {
     q?: string;
     page?: number;
     size?: number;
 }): Promise<Student[]> {
-    const response = await api.get("/students", { params });
+    // Increase size to 1000 by default to avoid pagination hiding new students
+    const queryParams = { size: 1000, ...params };
+    const response = await api.get("/students", { params: queryParams });
     const data = response.data.content ?? response.data;
     return Array.isArray(data) ? data.map(normalizeStudent) : [];
 }
@@ -127,7 +129,8 @@ export async function listActiveStudents(params?: {
     page?: number;
     size?: number;
 }): Promise<Student[]> {
-    const response = await api.get("/students", { params: { ...params, isEnrolled: true } });
+    const queryParams = { size: 1000, isEnrolled: true, ...params };
+    const response = await api.get("/students", { params: queryParams });
     const data = response.data.content ?? response.data;
     return Array.isArray(data) ? data.map(normalizeStudent) : [];
 }
@@ -146,6 +149,7 @@ export async function createStudent(payload: {
     feesDeposited?: number;
     dateOfJoining: string;
     photo?: string;
+    isEnrolled?: boolean;
 }): Promise<Student> {
     const response = await api.post("/students", payload);
     return normalizeStudent(response.data);

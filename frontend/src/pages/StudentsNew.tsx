@@ -193,6 +193,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 seasonalFees: data.seasonalFees,
                 feesDeposited: 0, // Explicitly 0 here
                 photo: data.photo,
+                isEnrolled: data.isEnrolled,
             });
 
             // 2. Process the formal membership payment

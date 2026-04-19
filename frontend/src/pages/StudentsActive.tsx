@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { listActiveStudents, searchStudents, Student } from "@/lib/students";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,16 +19,20 @@ import {
   ChevronRight,
   ShieldCheck,
   Smartphone,
-  Info
+  Info,
+  ArrowUpDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function StudentsActive({ embedded = false }: { embedded?: boolean }) {
+    const [searchParams] = useSearchParams();
+    const tab = searchParams.get("tab");
     const [q, setQ] = useState("");
     const [selected, setSelected] = useState<Student | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sortBy, setSortBy] = useState<"name" | "newest">("newest");
 
     useEffect(() => {
         const fetch = async () => {
@@ -49,11 +54,19 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
             }
         };
         fetch();
-    }, [q]);
+    }, [q, tab]);
 
     const sortedStudents = useMemo(() => {
-        return [...students].sort((a, b) => a.name.localeCompare(b.name));
-    }, [students]);
+        if (sortBy === "name") {
+            return [...students].sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            return [...students].sort((a, b) => {
+                const dateA = a.dateOfJoining || "";
+                const dateB = b.dateOfJoining || "";
+                return dateB.localeCompare(dateA) || (b.regNo || "").localeCompare(a.regNo || "");
+            });
+        }
+    }, [students, sortBy]);
 
     const regOf = (s: Student) => s.regNo || "—";
 
@@ -105,8 +118,19 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
                             />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" className="rounded-xl border-slate-200 font-bold gap-2 hover:bg-slate-50">
-                            <Clock className="h-4 w-4" /> Recent First
+                          <Button 
+                            variant={sortBy === "newest" ? "default" : "outline"}
+                            onClick={() => setSortBy("newest")}
+                            className="rounded-xl font-bold gap-2"
+                          >
+                            <Clock className="h-4 w-4" /> Newest First
+                          </Button>
+                          <Button 
+                            variant={sortBy === "name" ? "default" : "outline"}
+                            onClick={() => setSortBy("name")}
+                            className="rounded-xl font-bold gap-2"
+                          >
+                            <ArrowUpDown className="h-4 w-4" /> Alphabetical
                           </Button>
                         </div>
                     </div>
