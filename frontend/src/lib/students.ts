@@ -76,22 +76,11 @@ function normalizeStudent(raw: any): Student {
     const meta = ensureMeta(raw.id);
     const doj: string | undefined = raw.dateOfJoining;
 
-    // RULE: If we have an explicit validity span in metadata (from a fresh payment/re-admission),
-    // we use it to calculate the expiry strictly from the Joining Date.
-    if (doj && meta.currentValidityMonths && meta.currentValidityMonths > 0) {
-        try {
-            const [jy, jm, jd] = doj.slice(0, 10).split("-").map(Number);
-            const joining = new Date(jy, jm - 1, jd);
-            const derivedExpiry = addMonths(joining, meta.currentValidityMonths);
-            const pad = (n: number) => String(n).padStart(2, "0");
-            activeUntil = `${derivedExpiry.getFullYear()}-${pad(derivedExpiry.getMonth() + 1)}-${pad(derivedExpiry.getDate())}T00:00:00`;
-        } catch { }
-    }
-
     // AGGREGATE FEES: If metadata has a cumulative feesDeposited, it overrides the backend's (potentially static) value.
+
     // We treat the backend's value as a 'base' if metadata is empty.
-    const feesDeposited = (meta.feesDeposited && meta.feesDeposited > 0) 
-        ? meta.feesDeposited 
+    const feesDeposited = (meta.feesDeposited && meta.feesDeposited > 0)
+        ? meta.feesDeposited
         : (raw.feesDeposited || 0);
 
     const now = new Date();
@@ -162,10 +151,10 @@ export async function createStudent(payload: {
         isEnrolled: payload.isEnrolled ?? true,
     });
     const student = normalizeStudent(response.data);
-    
+
     // Save metadata locally too
-    setStudentMeta(student.id, { 
-        photo: payload.photo, 
+    setStudentMeta(student.id, {
+        photo: payload.photo,
         isEnrolled: payload.isEnrolled ?? true,
     });
     return student;

@@ -65,18 +65,18 @@ export default function RenewMembership() {
   const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [foundStudent, setFoundStudent] = useState<Student | null>(null);
-  const [renewedStudent, setRenewedStudent] = useState<{ 
-      name: string, 
-      phone: string, 
-      amount: string, 
-      validity: string,
-      isReAdmission?: boolean,
-      regNo?: string,
-      seatNo?: string,
-      monthlyRate?: string,
-      pending?: string,
-      period?: string,
-      joiningDate?: string
+  const [renewedStudent, setRenewedStudent] = useState<{
+    name: string,
+    phone: string,
+    amount: string,
+    validity: string,
+    isReAdmission?: boolean,
+    regNo?: string,
+    seatNo?: string,
+    monthlyRate?: string,
+    pending?: string,
+    period?: string,
+    joiningDate?: string
   } | null>(null);
 
   const { toast } = useToast();
@@ -136,7 +136,7 @@ export default function RenewMembership() {
   const getFeeInputs = (s: Student) =>
     feeInputs[s.id] ?? {
       seasonalFees: String(s.seasonalFees ?? 0),
-      feesDeposited: String(s.feesDeposited ?? 0),
+      feesDeposited: String(s.seasonalFees ?? 0), // Default to monthly rate for the payment today
       months: "1",
     };
 
@@ -173,17 +173,15 @@ export default function RenewMembership() {
       const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
       const isReAdmission = student.isExpired || !student.isEnrolled;
 
-      setStudentMeta(student.id, {
-        currentValidityMonths: isReAdmission ? months : (existingMonths + months),
-        feesDeposited: isReAdmission ? deposit : (existingFees + deposit)
-      });
-
       const updated = await renewMembership(student.id, {
         months,
         amount: deposit,
         method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-        note: "Instant Renewal",
-        dateOfJoining: student.dateOfJoining || undefined,
+        note: "Instant Renewal"
+      });
+
+      setStudentMeta(student.id, {
+        feesDeposited: isReAdmission ? deposit : (existingFees + deposit)
       });
 
       setRenewedStudent({
@@ -209,14 +207,12 @@ export default function RenewMembership() {
       setRenewingIds((prev) => { const s = new Set(prev); s.delete(student.id); return s; });
     }
   };
-
   // Debounced seat check
   useEffect(() => {
     if (!watchedSeat || watchedSeat.trim().length === 0) {
       setSeatStatus(null);
       return;
     }
-
     const timer = setTimeout(async () => {
       setSeatStatus("checking");
       try {
@@ -276,18 +272,16 @@ export default function RenewMembership() {
       const currentMonths = foundStudent.meta?.currentValidityMonths || 0;
       const currentFees = foundStudent.meta?.feesDeposited || foundStudent.feesDeposited || 0;
 
-      setStudentMeta(foundStudent.id, {
-        currentValidityMonths: isReAdmission ? monthsNum : (currentMonths + monthsNum),
-        feesDeposited: isReAdmission ? deposit : (currentFees + deposit),
-        seasonalFees: seasonal // Persist the new rate in meta too
-      });
-
       const updated = await renewMembership(foundStudent.id, {
         months: monthsNum,
         amount: deposit,
         method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-        note: isReAdmission ? "Re-admission Payment" : note,
-        dateOfJoining: (isReAdmission ? new Date().toISOString() : foundStudent.dateOfJoining) || undefined,
+        note: isReAdmission ? "Re-admission Payment" : note
+      });
+
+      setStudentMeta(foundStudent.id, {
+        feesDeposited: isReAdmission ? deposit : (currentFees + deposit),
+        seasonalFees: seasonal // Persist the new rate in meta too
       });
 
       const activeUntilStr = updated.activeUntil ? format(new Date(updated.activeUntil), "dd MMM, yyyy") : "N/A";
@@ -602,174 +596,186 @@ export default function RenewMembership() {
                   <div className="animate-in slide-in-from-top-4 duration-500 border-t border-slate-100 pt-6 space-y-8">
                     {/* Student Identity Card */}
                     <div className="group relative overflow-hidden rounded-[2rem] bg-slate-900 p-6 text-white shadow-2xl transition-all hover:bg-slate-950">
-                        <div className="absolute -right-5 -bottom-5 h-32 w-32 rounded-full bg-primary/20 blur-2xl transition-all group-hover:scale-150" />
-                        <div className="absolute -left-10 -top-10 h-24 w-24 rounded-full bg-blue-500/10 blur-xl" />
-                        
-                        <div className="relative z-10 flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                            <div className="h-14 w-14 rounded-full overflow-hidden bg-white/10 ring-4 ring-white/10 border-2 border-white/20 flex items-center justify-center shadow-inner">
-                              <Avatar className="h-full w-full">
-                                <AvatarImage src={foundStudent.photo} className="object-cover" />
-                                <AvatarFallback className="bg-transparent text-primary text-xl font-black">
-                                  {foundStudent.name.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            </div>
-                                <Badge className={cn(
-                                    "h-6 px-3 rounded-lg font-black text-[9px] uppercase tracking-widest border-none shadow-lg",
-                                    isReAdmission ? "bg-amber-500 text-white animate-pulse" : "bg-emerald-500 text-white"
-                                )}>
-                                    {isReAdmission ? "Re-admission Mode" : "Standard Renewal"}
-                                </Badge>
-                            </div>
-                            
-                            <div className="space-y-1">
-                                <h4 className="text-xl font-black tracking-tight">{foundStudent.name}</h4>
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                  <span className="flex items-center gap-1"><Hash className="h-3 w-3" /> {foundStudent.regNo}</span>
-                                  <span className="h-1 w-1 rounded-full bg-slate-700" />
-                                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> Initial Seat: {foundStudent.seatNo}</span>
-                                </div>
-                            </div>
+                      <div className="absolute -right-5 -bottom-5 h-32 w-32 rounded-full bg-primary/20 blur-2xl transition-all group-hover:scale-150" />
+                      <div className="absolute -left-10 -top-10 h-24 w-24 rounded-full bg-blue-500/10 blur-xl" />
+
+                      <div className="relative z-10 flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                          <div className="h-14 w-14 rounded-full overflow-hidden bg-white/10 ring-4 ring-white/10 border-2 border-white/20 flex items-center justify-center shadow-inner">
+                            <Avatar className="h-full w-full">
+                              <AvatarImage src={foundStudent.photo} className="object-cover" />
+                              <AvatarFallback className="bg-transparent text-primary text-xl font-black">
+                                {foundStudent.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <Badge className={cn(
+                            "h-6 px-3 rounded-lg font-black text-[9px] uppercase tracking-widest border-none shadow-lg",
+                            isReAdmission ? "bg-amber-500 text-white animate-pulse" : "bg-emerald-500 text-white"
+                          )}>
+                            {isReAdmission ? "Re-admission Mode" : "Standard Renewal"}
+                          </Badge>
                         </div>
+
+                        <div className="space-y-1">
+                          <h4 className="text-xl font-black tracking-tight">{foundStudent.name}</h4>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <span className="flex items-center gap-1"><Hash className="h-3 w-3" /> {foundStudent.regNo}</span>
+                            <span className="h-1 w-1 rounded-full bg-slate-700" />
+                            <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> Initial Seat: {foundStudent.seatNo}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <form onSubmit={(e) => { e.preventDefault(); onRenew(); }} className="space-y-8">
-                        {/* Placement & Duration Sector */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                                    <Hash className="h-5 w-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-800">Seat & Cycle</h3>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Assigned Seat</Label>
-                                    <div className="relative">
-                                        <Input 
-                                            placeholder="e.g. S-22" 
-                                            className="h-12 pl-10 pr-12 rounded-2xl border-slate-200 font-bold bg-white focus:ring-primary/20" 
-                                            {...renewForm.register("seatNo")} 
-                                        />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                          {seatStatus === "checking" && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
-                                          {seatStatus === "available" && <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in zoom-in duration-300" />}
-                                          {seatStatus === "taken" && (
-                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-500 animate-in slide-in-from-right-2 duration-300">
-                                              <AlertCircle className="h-3 w-3" />
-                                            </div>
-                                          )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Period (Mn)</Label>
-                                    <div className="relative">
-                                        <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                        <Input type="number" min="1" className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary bg-white transition-all focus:scale-[1.02]" {...renewForm.register("months")} />
-                                    </div>
-                                </div>
-                            </div>
+                      {/* Placement & Duration Sector */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                            <Hash className="h-5 w-5" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800">Seat & Cycle</h3>
                         </div>
 
-                        {/* Financial Sector */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                                    <Wallet className="h-5 w-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-800">Financial Setup</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Assigned Seat</Label>
+                            <div className="relative">
+                              <Input
+                                placeholder="e.g. S-22"
+                                className="h-12 pl-10 pr-12 rounded-2xl border-slate-200 font-bold bg-white focus:ring-primary/20"
+                                {...renewForm.register("seatNo")}
+                              />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                {seatStatus === "checking" && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
+                                {seatStatus === "available" && <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in zoom-in duration-300" />}
+                                {seatStatus === "taken" && (
+                                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-500 animate-in slide-in-from-right-2 duration-300">
+                                    <AlertCircle className="h-3 w-3" />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Monthly Rate</Label>
-                                    <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                        <Input className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-slate-900 bg-white" {...renewForm.register("seasonalFees")} />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Deposit Today</Label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">₹</span>
-                                        <Input className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-emerald-600 bg-emerald-50/10 focus:bg-white" {...renewForm.register("feesDeposited")} />
-                                    </div>
-                                </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Period (Mn)</Label>
+                            <div className="relative">
+                              <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                              <Input type="number" min="1" className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary bg-white transition-all focus:scale-[1.02]" {...renewForm.register("months")} />
                             </div>
-                            
-                            <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 space-y-3 relative overflow-hidden group">
-                                <div className="absolute right-0 top-0 h-full w-1.5 bg-primary/20 group-hover:bg-primary transition-colors" />
-                                <div className="flex items-center justify-between text-sm">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Target Expiry Date</span>
-                                        <span className="font-bold text-primary text-base">
-                                            {(() => {
-                                                const v = renewForm.watch();
-                                                const m = parseInt(v.months as unknown as string, 10) || 1;
-                                                const baseDate = isReAdmission ? new Date() : (foundStudent.activeUntil ? new Date(foundStudent.activeUntil) : new Date());
-                                                return format(addDays(baseDate, m * 30), "dd MMM, yyyy");
-                                            })()}
-                                        </span>
-                                    </div>
-                                    <Calendar className="h-8 w-8 text-primary/10" />
-                                </div>
-                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Financial Sector */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                            <Wallet className="h-5 w-5" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800">Financial Setup</h3>
                         </div>
 
-                        {/* Gateway Sector */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                                <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                    <CreditCard className="h-5 w-5" />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Monthly Rate</Label>
+                            <div className="relative group">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                              <Input className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-slate-900 bg-white" {...renewForm.register("seasonalFees")} />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Deposit Today</Label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">₹</span>
+                              <Input className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-emerald-600 bg-emerald-50/10 focus:bg-white" {...renewForm.register("feesDeposited")} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 space-y-3 relative overflow-hidden group">
+                          <div className="absolute right-0 top-0 h-full w-1.5 bg-primary/20 group-hover:bg-primary transition-colors" />
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Target Expiry Date</span>
+                              <span className="font-bold text-primary text-base">
+                                {(() => {
+                                  const v = renewForm.watch();
+                                  const m = parseInt(v.months as unknown as string, 10) || 1;
+                                  let targetDate;
+                                  if (isReAdmission && foundStudent.dateOfJoining) {
+                                      const anchor = new Date(foundStudent.dateOfJoining);
+                                      const cursor = new Date();
+                                      let cycleEnd = new Date(anchor);
+                                      while (cycleEnd <= cursor) {
+                                          cycleEnd = addMonths(cycleEnd, 1);
+                                      }
+                                      targetDate = addMonths(cycleEnd, m - 1);
+                                  } else {
+                                      const baseDate = foundStudent.activeUntil ? new Date(foundStudent.activeUntil) : new Date();
+                                      targetDate = addMonths(baseDate, m);
+                                  }
+                                  return format(targetDate, "dd MMM, yyyy");
+                                })()}
+                              </span>
+                            </div>
+                            <Calendar className="h-8 w-8 text-primary/10" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Gateway Sector */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                          <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                            <CreditCard className="h-5 w-5" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800">Payment Channel</h3>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          {["cash", "upi", "card"].map(m => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => renewForm.setValue("method", m as any)}
+                              className={cn(
+                                "h-16 flex flex-col items-center justify-center rounded-2xl border-2 transition-all p-1 relative overflow-hidden group/btn",
+                                renewForm.watch("method") === m
+                                  ? "border-primary bg-white text-primary shadow-xl shadow-primary/10"
+                                  : "border-slate-50 bg-slate-50/50 text-slate-400 hover:border-slate-200 hover:text-slate-600 hover:bg-white"
+                              )}
+                            >
+                              {renewForm.watch("method") === m && (
+                                <div className="absolute -right-2 -top-2 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                                  <div className="h-1.5 w-1.5 bg-white rounded-full" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-800">Payment Channel</h3>
-                            </div>
-                            
-                            <div className="grid grid-cols-3 gap-3">
-                              {["cash", "upi", "card"].map(m => (
-                                <button
-                                  key={m}
-                                  type="button"
-                                  onClick={() => renewForm.setValue("method", m as any)}
-                                  className={cn(
-                                    "h-16 flex flex-col items-center justify-center rounded-2xl border-2 transition-all p-1 relative overflow-hidden group/btn",
-                                    renewForm.watch("method") === m 
-                                      ? "border-primary bg-white text-primary shadow-xl shadow-primary/10" 
-                                      : "border-slate-50 bg-slate-50/50 text-slate-400 hover:border-slate-200 hover:text-slate-600 hover:bg-white"
-                                  )}
-                                >
-                                  {renewForm.watch("method") === m && (
-                                      <div className="absolute -right-2 -top-2 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
-                                          <div className="h-1.5 w-1.5 bg-white rounded-full" />
-                                      </div>
-                                  )}
-                                  {m === "cash" && <Wallet className="h-5 w-5 mb-1 transition-transform group-hover/btn:scale-110" />}
-                                  {m === "upi" && <Smartphone className="h-5 w-5 mb-1 transition-transform group-hover/btn:scale-110" />}
-                                  {m === "card" && <CreditCard className="h-5 w-5 mb-1 transition-transform group-hover/btn:scale-110" />}
-                                  <span className="text-[9px] uppercase font-black tracking-widest">{m}</span>
-                                </button>
-                              ))}
-                            </div>
+                              )}
+                              {m === "cash" && <Wallet className="h-5 w-5 mb-1 transition-transform group-hover/btn:scale-110" />}
+                              {m === "upi" && <Smartphone className="h-5 w-5 mb-1 transition-transform group-hover/btn:scale-110" />}
+                              {m === "card" && <CreditCard className="h-5 w-5 mb-1 transition-transform group-hover/btn:scale-110" />}
+                              <span className="text-[9px] uppercase font-black tracking-widest">{m}</span>
+                            </button>
+                          ))}
                         </div>
+                      </div>
 
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Internal Remarks</Label>
-                            <Input placeholder="Operation note..." className="h-12 rounded-xl border-slate-200" {...renewForm.register("note")} />
-                        </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Internal Remarks</Label>
+                        <Input placeholder="Operation note..." className="h-12 rounded-xl border-slate-200" {...renewForm.register("note")} />
+                      </div>
 
-                        <Button type="submit" className="w-full h-16 rounded-[1.5rem] bg-slate-900 hover:bg-primary font-black text-lg shadow-2xl shadow-slate-200/50 transition-all active:scale-[0.98] group/submit overflow-hidden relative">
-                          <span className="relative z-10 flex items-center gap-2">
-                            {isReAdmission ? "Complete Re-admission" : "Initialize Renewal"}
-                            <ArrowRight className="h-5 w-5 group-hover/submit:translate-x-1 transition-transform" />
-                          </span>
-                          <div className="absolute inset-0 bg-primary opacity-0 group-hover/submit:opacity-100 transition-opacity" />
-                        </Button>
-                      </form>
-                    </div>
-                  )}
+                      <Button type="submit" className="w-full h-16 rounded-[1.5rem] bg-slate-900 hover:bg-primary font-black text-lg shadow-2xl shadow-slate-200/50 transition-all active:scale-[0.98] group/submit overflow-hidden relative">
+                        <span className="relative z-10 flex items-center gap-2">
+                          {isReAdmission ? "Complete Re-admission" : "Initialize Renewal"}
+                          <ArrowRight className="h-5 w-5 group-hover/submit:translate-x-1 transition-transform" />
+                        </span>
+                        <div className="absolute inset-0 bg-primary opacity-0 group-hover/submit:opacity-100 transition-opacity" />
+                      </Button>
+                    </form>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
