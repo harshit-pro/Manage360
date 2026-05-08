@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SeatDetailsDialog } from "./SeatDetailsDialog";
 import { listAllStudents, Student } from "@/lib/students";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap, Clock, Calendar, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect } from "react";
+import { SeatDetailsDialog } from "./SeatDetailsDialog";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 
 interface Seat {
   id: number;
@@ -72,8 +75,11 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
           let student: Student | undefined;
           for (const key of keysToTry) {
             if (studentMap.has(key)) {
-              student = studentMap.get(key);
-              break;
+              const matched = studentMap.get(key);
+              if (matched) {
+                student = matched;
+                break;
+              }
             }
           }
 
@@ -95,9 +101,9 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
                 paymentStatus: isExpired ? "unpaid" : (student.feesDeposited < student.seasonalFees ? "unpaid" : "paid"),
                 activeUntil: student.activeUntil,
                 isExpired,
-                totalDue: (student.seasonalFees - student.feesDeposited > 0) 
-                  ? `₹${student.seasonalFees - student.feesDeposited}` 
-                  : undefined
+                totalDue: (student.seasonalFees - student.feesDeposited > 0)
+                  ? `₹${student.seasonalFees - student.feesDeposited}`
+                  : undefined,
               }
               : undefined,
           });
@@ -122,22 +128,33 @@ export function SeatMapGrid({ totalSeats }: SeatMapGridProps) {
 
   return (
     <>
-      <Card className="shadow-md animate-fade-in">
-        <CardHeader>
-          <CardTitle>Seat Map Grid</CardTitle>
-          <div className="flex items-center gap-4 text-sm flex-wrap">
+      <Card className="shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-xl animate-fade-in">
+        <CardHeader className="p-8 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <CardTitle className="text-3xl font-black tracking-tight flex items-center gap-3 italic">
+                <div className="h-8 w-2 bg-primary rounded-full" />
+                Live Occupancy
+              </CardTitle>
+              <p className="text-slate-400 text-sm font-medium">Real-time station monitoring.</p>
+            </div>
+
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 pt-4">
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-success" />
-              <span className="text-muted-foreground">Available</span>
+              <div className="h-3 w-8 rounded-full bg-slate-100 border border-slate-200" />
+              <span className="text-[10px] font-black uppercase text-slate-400">Available</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-destructive" />
-              <span className="text-muted-foreground">Booked</span>
+              <div className="h-3 w-8 rounded-full bg-slate-900 shadow-lg shadow-slate-900/20" />
+              <span className="text-[10px] font-black uppercase text-slate-400">Occupied</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-yellow-400" />
-              <span className="text-muted-foreground">Expired</span>
+              <div className="h-3 w-8 rounded-full bg-amber-400 shadow-lg shadow-amber-400/20" />
+              <span className="text-[10px] font-black uppercase text-slate-400">Expired</span>
             </div>
+
           </div>
         </CardHeader>
         <CardContent className="p-2 sm:p-6 lg:p-8">

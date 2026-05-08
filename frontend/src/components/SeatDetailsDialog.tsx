@@ -97,7 +97,9 @@ export function SeatDetailsDialog({ seat, open, onOpenChange }: SeatDetailsDialo
                       <User className="h-3 w-3" /> Identity
                     </div>
                     <div className="font-bold text-slate-900 truncate">{seat.student.name}</div>
-                    <div className="text-[10px] text-slate-400 font-medium">#{seat.student.regNo || "Unknown"}</div>
+                    <div className="flex items-center gap-2">
+                       <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">#{seat.student.regNo || "Unknown"}</span>
+                    </div>
                  </div>
                  <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-1">
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">

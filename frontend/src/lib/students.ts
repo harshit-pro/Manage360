@@ -99,9 +99,15 @@ function normalizeStudent(raw: any): Student {
     const dateExpired = activeUntil ? new Date(activeUntil) < todayStart : true;
     const backendSaysExpired = m ? m.status === "EXPIRED" : raw.isExpired;
 
-    const photo = raw.photo || meta.photo || "";
-
-    return { ...raw, photo, activeUntil, feesDeposited, isExpired: backendSaysExpired || dateExpired, membership: m, meta };
+    return {
+        ...raw,
+        photo: meta.photo || raw.photo || "",
+        activeUntil,
+        feesDeposited,
+        isExpired: dateExpired || backendSaysExpired,
+        membership: m,
+        meta
+    };
 }
 
 /** Fetch a single student by ID */
@@ -151,8 +157,18 @@ export async function createStudent(payload: {
     photo?: string;
     isEnrolled?: boolean;
 }): Promise<Student> {
-    const response = await api.post("/students", payload);
-    return normalizeStudent(response.data);
+    const response = await api.post("/students", {
+        ...payload,
+        isEnrolled: payload.isEnrolled ?? true,
+    });
+    const student = normalizeStudent(response.data);
+    
+    // Save metadata locally too
+    setStudentMeta(student.id, { 
+        photo: payload.photo, 
+        isEnrolled: payload.isEnrolled ?? true,
+    });
+    return student;
 }
 
 /** Toggle enrollment status */
