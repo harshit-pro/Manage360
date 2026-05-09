@@ -26,6 +26,7 @@ public class StudentResponse {
     private String guardianMobile;
     private Integer seasonalFees;
     private Integer feesDeposited;
+    private Integer totalFeesDue;
     private Boolean isEnrolled;
 
     private Membership membership;

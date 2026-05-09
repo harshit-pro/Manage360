@@ -57,5 +57,6 @@ public class Student extends BaseEntity {
     private String address;
     private Integer seasonalFees;
     private Integer feesDeposited = 0;
+    private Integer totalFeesDue = 0;
     private Boolean isEnrolled = true;
 }

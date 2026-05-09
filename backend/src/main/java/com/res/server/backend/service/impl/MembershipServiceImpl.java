@@ -44,7 +44,14 @@ public class MembershipServiceImpl implements MembershipService {
                 LocalDate today = LocalDate.now();
                 LocalDate anchor = student.getDateOfJoining() != null ? student.getDateOfJoining() : today;
                 LocalDate newActiveUntil;
-                if (membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
+                
+                if (months == 0) {
+                        // Clearing dues only: keep current validity
+                        newActiveUntil = membership.getActiveUntil();
+                        if (newActiveUntil == null) {
+                                newActiveUntil = anchor.minusDays(1); // Default to expired if never set
+                        }
+                } else if (membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
                         // Still active (inclusive through activeUntil day): extend from current period end
                         newActiveUntil = membership.getActiveUntil().plusMonths(months);
                 } else if (student.getFeesDeposited() == 0) {
@@ -63,8 +70,13 @@ public class MembershipServiceImpl implements MembershipService {
                 membership.setStatus(MembershipStatus.ACTIVE);
                 membership.setLastPaymentMethod(method);
 
-                // 🔥 Update student's cumulative deposited fees to reflect this payment
-                student.setFeesDeposited(student.getFeesDeposited() + amount);
+                // 🔥 Update student's cumulative fees to reflect this payment and the months purchased
+                int currentDue = student.getTotalFeesDue() != null ? student.getTotalFeesDue() : 0;
+                int seasonalRate = student.getSeasonalFees() != null ? student.getSeasonalFees() : 0;
+                student.setTotalFeesDue(currentDue + (months * seasonalRate));
+                
+                int currentDeposited = student.getFeesDeposited() != null ? student.getFeesDeposited() : 0;
+                student.setFeesDeposited(currentDeposited + amount);
                 studentRepository.save(student);
 
                 Payment payment = new Payment();

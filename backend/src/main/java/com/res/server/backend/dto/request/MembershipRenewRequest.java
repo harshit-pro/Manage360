@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Getter @Setter
 public class MembershipRenewRequest {
-    @Min(1) // Minimum months should be 1
+    @Min(0) // Support 0 months for clearing dues
     private int months;
     @Min(1) // Minimum amount should be 1
     private int amount;
