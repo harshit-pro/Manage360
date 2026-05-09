@@ -15,6 +15,7 @@ import PendingFees from "./pages/PendingFees";
 import Expenses from "./pages/Expenses";
 import MonthlySummary from "./pages/MonthlySummary";
 import InvoiceDetail from "./pages/InvoiceDetail";
+import InstituteInfo from "./pages/Settings/InstituteInfo";
 import NotFound from "./pages/NotFound";
 
 // Layout & auth
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/reports/monthly" element={<MonthlySummary />} />
               <Route path="/invoices/:paymentId" element={<InvoiceDetail />} />
+              <Route path="/settings/institute" element={<InstituteInfo />} />
             </Route>
           </Route>
 

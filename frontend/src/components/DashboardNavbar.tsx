@@ -1,5 +1,5 @@
 import { Bell, LogOut, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LibraryProfileDialog } from "@/components/LibraryProfileDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +18,16 @@ import { useToast } from "@/components/ui/use-toast";
 export function DashboardNavbar() {
   const nav = useNavigate();
   const { toast } = useToast();
-  const user = currentUser();
+  const [user, setUser] = useState(currentUser());
   const [openProfile, setOpenProfile] = useState(false);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setUser(currentUser());
+    };
+    window.addEventListener('library-updated', handleUpdate);
+    return () => window.removeEventListener('library-updated', handleUpdate);
+  }, []);
 
   const onLogout = () => {
     signOut();

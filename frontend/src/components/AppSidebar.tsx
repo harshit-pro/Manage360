@@ -321,8 +321,17 @@ function NavItem({
 
 export function AppSidebar() {
   const { open } = useSidebar();
-  const user = currentUser();
-  const libraryName = getLibraryName();
+  const [user, setUser] = useState(currentUser());
+  const [libraryName, setLibraryName] = useState(getLibraryName());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setLibraryName(getLibraryName());
+      setUser(currentUser()); // refresh user since it might contain the new name
+    };
+    window.addEventListener('library-updated', handleUpdate);
+    return () => window.removeEventListener('library-updated', handleUpdate);
+  }, []);
 
   return (
     <Sidebar collapsible="icon" className="group-data-[side=left]:border-r-0">

@@ -158,3 +158,15 @@ export function getUserByEmail(email: string): User | undefined {
 export function getLibraryName(): string | null {
     return localStorage.getItem('libraryName');
 }
+
+/** 
+ * Update local library metadata and notify components to refresh.
+ * This ensures changes in Settings reflect globally without a page reload.
+ */
+export function updateLibraryMetadata(name: string, totalSeats?: number) {
+    localStorage.setItem('libraryName', name);
+    if (totalSeats !== undefined) {
+        localStorage.setItem('totalSeats', totalSeats.toString());
+    }
+    window.dispatchEvent(new Event('library-updated'));
+}
