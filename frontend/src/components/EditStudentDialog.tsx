@@ -156,21 +156,18 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         const months = Math.floor(deposited / seasonal) || 1;
 
         try {
-            const existingMonths = student.meta?.currentValidityMonths || 0;
             const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
 
             if (isReAdmission) {
                // Re-admission starts a fresh financial cycle. 
                // We reset the cumulative counter to only the current deposit.
                setStudentMeta(student.id, { 
-                   currentValidityMonths: months,
                    feesDeposited: deposited,
                    photo: data.photo
                });
             } else if (deposited > 0) {
                // Normal payment/renewal adds to the existing cycle
                setStudentMeta(student.id, { 
-                   currentValidityMonths: existingMonths + months,
                    feesDeposited: existingFees + deposited,
                    photo: data.photo
                });
@@ -320,19 +317,15 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             </div>
                         </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dateOfJoining" className={cn("text-[10px] font-bold uppercase tracking-wider pl-1", isReAdmission ? "text-primary" : "text-slate-400")}>
-                                    {isReAdmission ? "New Admission Date" : "Joining Date (Locked)"}
+                                <Label htmlFor="dateOfJoining" className="text-[10px] font-bold uppercase tracking-wider pl-1 text-slate-400">
+                                    Joining Date
                                 </Label>
                                 <div className="relative">
-                                    <Calendar className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4", isReAdmission ? "text-primary/50" : "text-slate-300")} />
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                     <Input 
                                         id="dateOfJoining" 
                                         type="date" 
-                                        disabled={!isReAdmission}
-                                        className={cn(
-                                            "h-12 pl-11 rounded-2xl border-slate-200",
-                                            !isReAdmission && "bg-slate-50 text-slate-500 cursor-not-allowed border-dashed"
-                                        )} 
+                                        className="h-12 pl-11 rounded-2xl border-slate-200"
                                         {...register("dateOfJoining")} 
                                     />
                                 </div>

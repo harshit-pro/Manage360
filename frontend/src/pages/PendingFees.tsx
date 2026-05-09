@@ -62,7 +62,7 @@ export default function PendingFees() {
 
   const pendingStudents = useMemo(() => {
     const filtered = students.filter(
-      (s) => s.isEnrolled !== false && (s.seasonalFees ?? 0) > (s.feesDeposited ?? 0)
+      (s) => s.isEnrolled !== false && (s.totalFeesDue ?? 0) > (s.feesDeposited ?? 0)
     );
     if (!q) return filtered;
     const qq = q.toLowerCase();
@@ -76,7 +76,7 @@ export default function PendingFees() {
 
   const totalPendingAmount = useMemo(() => {
     return pendingStudents.reduce((sum, s) => {
-        const due = (s.seasonalFees ?? 0) - (s.feesDeposited ?? 0);
+        const due = (s.totalFeesDue ?? 0) - (s.feesDeposited ?? 0);
         return sum + Math.max(0, due);
     }, 0);
   }, [pendingStudents]);
@@ -86,7 +86,7 @@ export default function PendingFees() {
   }, [pendingStudents]);
 
   const regOf = (s: StudentView) => (s.regNo ? s.regNo.replace(/^REG-/, "") : "—");
-  const pendingAmount = (s: StudentView) => Math.max(0, (s.seasonalFees ?? 0) - (s.feesDeposited ?? 0));
+  const pendingAmount = (s: StudentView) => Math.max(0, (s.totalFeesDue ?? 0) - (s.feesDeposited ?? 0));
 
   const handleClearDues = async () => {
     if (!clearingStudent) return;
@@ -96,7 +96,7 @@ export default function PendingFees() {
         studentId: clearingStudent.id,
         amount: pendingAmount(clearingStudent),
         paymentMethod: paymentMethod,
-        months: 1, // Satisfies backend validation (>=1)
+        months: 0, // Clear existing dues without extending validity period
       });
 
       const currentFees = (clearingStudent.feesDeposited || 0);

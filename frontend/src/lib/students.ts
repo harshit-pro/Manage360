@@ -25,6 +25,7 @@ export interface Student {
     isExpired: boolean;       // derived: membership.status === "EXPIRED"
     seasonalFees: number;
     feesDeposited: number;
+    totalFeesDue?: number;
     activeUntil?: string;     // flattened from membership.activeUntil
     address?: string;
     aadharNo?: string;

@@ -253,7 +253,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 joiningDate: joiningDateStr,
                 monthlyRate: `₹${data.seasonalFees.toLocaleString("en-IN")}`,
                 deposited: `₹${data.feesDeposited.toLocaleString("en-IN")}`,
-                pending: `₹${Math.max(0, data.seasonalFees - data.feesDeposited).toLocaleString("en-IN")}`,
+                pending: `₹${Math.max(0, (data.seasonalFees * resolvedMembershipMonths) - data.feesDeposited).toLocaleString("en-IN")}`,
                 period: `${resolvedMembershipMonths} Month(s)`,
                 photo: data.photo
             });
