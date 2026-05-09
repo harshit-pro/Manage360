@@ -42,15 +42,20 @@ public class MembershipServiceImpl implements MembershipService {
                                 .orElseGet(() -> createDefaultMembership(student));
 
                 LocalDate today = LocalDate.now();
+                LocalDate anchor = student.getDateOfJoining() != null ? student.getDateOfJoining() : today;
                 LocalDate newActiveUntil;
                 if (membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
                         // Still active (inclusive through activeUntil day): extend from current period end
                         newActiveUntil = membership.getActiveUntil().plusMonths(months);
+                } else if (student.getFeesDeposited() == 0) {
+                        // First payment: strictly align to the joining date (anchor)
+                        // Even if backdated, we respect the intended first month of membership.
+                        newActiveUntil = anchor.plusMonths(months);
                 } else {
                         // Expired (or ends today / stale): align to the student's monthly billing
                         // anchor (joining date), advance month-by-month until the period end is
                         // after today, then apply the purchased months. Mirrors frontend cycle logic.
-                        LocalDate cycleEnd = firstPeriodEndStrictlyAfter(student.getDateOfJoining() != null ? student.getDateOfJoining() : today, today);
+                        LocalDate cycleEnd = firstPeriodEndStrictlyAfter(anchor, today);
                         newActiveUntil = cycleEnd.plusMonths(months - 1L);
                 }
 
