@@ -163,10 +163,13 @@ export function getLibraryName(): string | null {
  * Update local library metadata and notify components to refresh.
  * This ensures changes in Settings reflect globally without a page reload.
  */
-export function updateLibraryMetadata(name: string, totalSeats?: number) {
+export function updateLibraryMetadata(name: string, totalSeats?: number, templatesJson?: string) {
     localStorage.setItem('libraryName', name);
     if (totalSeats !== undefined) {
         localStorage.setItem('totalSeats', totalSeats.toString());
+    }
+    if (templatesJson !== undefined) {
+        localStorage.setItem('messageTemplates', templatesJson);
     }
     window.dispatchEvent(new Event('library-updated'));
 }

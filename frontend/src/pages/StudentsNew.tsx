@@ -48,6 +48,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import LiveSeatMap from "@/components/LiveSeatMap";
 // import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 
 const schema = z.object({
@@ -474,8 +475,14 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 </Card>
 
                 {/* Desktop Summary Sidebar */}
-                <div className="hidden lg:block space-y-6">
-                    <div className="sticky top-24">
+                <div className="hidden lg:flex flex-col gap-6 h-full">
+                    <div className="sticky top-24 space-y-6">
+                        <LiveSeatMap 
+                          onSelectSeat={(seat) => setValue("seatNo", seat)} 
+                          selectedSeat={watchedSeat}
+                          className="w-full"
+                        />
+                        
                         <RegistrationSummaryCard 
                             name={watchedName} 
                             seat={watchedSeat} 
@@ -484,11 +491,12 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                             activeUntil={activeUntilPreview} 
                             photo={watchedPhoto}
                         />
-                    </div>
-                    <div className="p-4 rounded-3xl border border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1 text-center">
-                        <ShieldCheck className="h-6 w-6 text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Data Encryption</span>
-                        <p className="text-[9px] text-slate-300">All student records are encrypted and stored in accordance with local data protection regulations.</p>
+
+                        <div className="p-4 rounded-3xl border border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1 text-center">
+                            <ShieldCheck className="h-6 w-6 text-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Data Encryption</span>
+                            <p className="text-[9px] text-slate-300">All student records are encrypted and stored in accordance with local data protection regulations.</p>
+                        </div>
                     </div>
                 </div>
             </div>

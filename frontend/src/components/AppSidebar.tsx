@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Info,
   UserCog,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { currentUser, getLibraryName } from "@/lib/auth";
@@ -127,6 +128,7 @@ const menuGroups = [
         icon: Settings,
         children: [
           { title: "Institute Info", url: "/settings/institute", icon: Info },
+          { title: "Message Templates", url: "/settings/messages", icon: MessageSquare },
           { title: "Admin Account", url: "/settings/account", icon: UserCog },
         ],
       },

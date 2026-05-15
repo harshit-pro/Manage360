@@ -10,6 +10,7 @@ export interface Library {
     city: string;
     totalSeats: number;
     contact: string;
+    templatesJson?: string;
     createdAt: string; // ISO date string
 }
 
@@ -27,6 +28,7 @@ export async function updateLibrary(payload: {
     city?: string;
     totalSeats?: number;
     contact?: string;
+    templatesJson?: string;
 }): Promise<Library> {
     const { id, ...rest } = payload;
     const response = await api.put(`/library/${id}`, rest);
