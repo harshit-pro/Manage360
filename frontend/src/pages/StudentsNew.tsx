@@ -280,8 +280,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
               </div>
             )}
 
-            {/* Mobile Preview */}
-            <div className="lg:hidden">
+            {/* Mobile Preview & Seat Selection */}
+            <div className="lg:hidden flex flex-col gap-6">
               <RegistrationSummaryCard 
                 name={watchedName} 
                 seat={watchedSeat} 
@@ -289,6 +289,11 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 months={resolvedMembershipMonths} 
                 activeUntil={activeUntilPreview} 
                 photo={watchedPhoto}
+              />
+              <LiveSeatMap 
+                onSelectSeat={(seat) => setValue("seatNo", seat)} 
+                selectedSeat={watchedSeat}
+                className="w-full shadow-lg"
               />
             </div>
 
@@ -477,12 +482,6 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 {/* Desktop Summary Sidebar */}
                 <div className="hidden lg:flex flex-col gap-6 h-full">
                     <div className="sticky top-24 space-y-6">
-                        <LiveSeatMap 
-                          onSelectSeat={(seat) => setValue("seatNo", seat)} 
-                          selectedSeat={watchedSeat}
-                          className="w-full"
-                        />
-                        
                         <RegistrationSummaryCard 
                             name={watchedName} 
                             seat={watchedSeat} 
@@ -490,6 +489,12 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                             months={resolvedMembershipMonths} 
                             activeUntil={activeUntilPreview} 
                             photo={watchedPhoto}
+                        />
+
+                        <LiveSeatMap 
+                          onSelectSeat={(seat) => setValue("seatNo", seat)} 
+                          selectedSeat={watchedSeat}
+                          className="w-full"
                         />
 
                         <div className="p-4 rounded-3xl border border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1 text-center">
