@@ -28,6 +28,9 @@ public class Library extends BaseEntity {
 
     @Column(name = "next_reg_seq")
     private Integer nextRegSeq = 1;
+
+    @Column(name = "templates_json", columnDefinition = "TEXT")
+    private String templatesJson;
 }
 
 // set code when library is created

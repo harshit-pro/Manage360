@@ -11,4 +11,5 @@ public class LibraryUpdateRequest {
     private String city;
     private Integer totalSeats;
     private String contact;
+    private String templatesJson;
 }

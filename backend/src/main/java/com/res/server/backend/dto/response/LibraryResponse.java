@@ -15,7 +15,9 @@ public class LibraryResponse {
     private final String city;
     private final Integer totalSeats;
     private final String contact;
+    private final String templatesJson;
     private final Instant createdAt;
+    private final String regPrefix;
 
     public LibraryResponse(Library library) {
         this.id = library.getId();
@@ -24,6 +26,8 @@ public class LibraryResponse {
         this.city = library.getCity();
         this.totalSeats = library.getTotalSeats();
         this.contact = library.getContact();
+        this.templatesJson = library.getTemplatesJson();
         this.createdAt = library.getCreatedAt();
+        this.regPrefix = library.getRegPrefix();
     }
 }

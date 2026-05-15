@@ -65,6 +65,8 @@ public class LibraryController {
             library.setTotalSeats(request.getTotalSeats());
         if (request.getContact() != null)
             library.setContact(request.getContact());
+        if (request.getTemplatesJson() != null)
+            library.setTemplatesJson(request.getTemplatesJson());
 
         libraryRepository.save(library);
         return ResponseEntity.ok(new LibraryResponse(library));
