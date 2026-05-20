@@ -1,7 +1,11 @@
 spring:
   application:
-    name:Manage360
+    name: Manage360
   profiles:
     active: dev
 server:
   port: 8080
+security:
+  jwt:
+    secret: your-secret-key
+    expiration-minutes: 60

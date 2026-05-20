@@ -15,17 +15,16 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
-  logging:
-    level:
-      org.flywaydb: DEBUG
-      org.hibernate.SQL: debug
-      org.hibernate.type.descriptor.sql.BasicBinder: trace
+logging:
+  level:
+    org.flywaydb: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-#security:
-#  jwt:
-#    secret: ${JWT_SECRET:dev-secret-please-change}
-#    expiration-minutes: 60 # 1 hour
-
+security:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-please-change}
+    expiration-minutes: 60 # 1 hour
 
 #  •	ddl-auto: validate → Flyway owns schema
 #  •	Never update or create in production systems
