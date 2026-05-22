@@ -25,7 +25,8 @@ security:
   jwt:
     secret: ${JWT_SECRET}
     expiration-minutes: 120 # 2 hours
-
 # Notes:
 # - Replace <PROD_DB_HOST>, <PROD_DB_USER>, and <PROD_DB_PASSWORD> with actual production values.
 # - Ensure the JWT secret is securely managed in production environments.
+server:
+  port: 8080
