@@ -13,20 +13,31 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:M2M0YzhjMDVjZWFhNDEyNjgzMGU3YmVkZGZjZjQ5NDI1YTA0YzQwOTg5YzlmZjEyN2NkYzNlZmY0YTA2MWQ3ZQ==}")
     private String secret;
 
     private SecretKey key;
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+        try {
+            if (secret == null || secret.trim().isEmpty()) {
+                throw new IllegalArgumentException("jwt.secret is not configured. Please set JWT_SECRET environment variable or jwt.secret in application properties.");
+            }
+            this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+            log.info("JWT key initialized successfully");
+        } catch (Exception e) {
+            log.error("Failed to initialize JWT key", e);
+            throw new RuntimeException("Failed to initialize JWT configuration: " + e.getMessage(), e);
+        }
     }
 
     public String extractUsername(String token) {

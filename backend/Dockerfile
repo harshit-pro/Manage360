@@ -11,4 +11,5 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 ENV PORT=8080
-CMD ["java", "-jar", "app.jar"]
+ENV JWT_SECRET=M2M0YzhjMDVjZWFhNDEyNjgzMGU3YmVkZGZjZjQ5NDI1YTA0YzQwOTg5YzlmZjEyN2NkYzNlZmY0YTA2MWQ3ZQ==
+CMD ["java", "-Dserver.port=${PORT}", "-Djwt.secret=${JWT_SECRET}", "-jar", "app.jar"]
