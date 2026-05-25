@@ -26,5 +26,9 @@ security:
     secret: ${JWT_SECRET:dev-secret-please-change}
     expiration-minutes: 60 # 1 hour
 
+app:
+  cors:
+    allowed-origins: http://localhost:5174,http://localhost:5173,http://localhost:3000
+
 #  •	ddl-auto: validate → Flyway owns schema
 #  •	Never update or create in production systems
