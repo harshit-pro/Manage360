@@ -51,9 +51,9 @@ import {
 import LiveSeatMap from "@/components/LiveSeatMap";
 // import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 
-const schema = z.object({
+const baseSchema = z.object({
     name: z.string().min(2, "Name is required"),
-    seatNo: z.string().min(1, "Seat No is required"),
+    seatNo: z.string().optional(),
     regNo: z.string().min(1),
     dateOfJoining: z.string().optional(), // ISO string
     address: z.string().min(3, "Address is required").optional(),
@@ -68,6 +68,16 @@ const schema = z.object({
     membershipMonths: z.coerce.number().int().positive().default(1),
     paymentMethod: z.enum(["cash", "upi", "card"]).default("cash"),
     photo: z.string().optional(),
+});
+
+const schema = baseSchema.superRefine((data, ctx) => {
+    if (data.isEnrolled && (!data.seatNo || data.seatNo.trim() === "")) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Seat No is required when marked active",
+            path: ["seatNo"]
+        });
+    }
 });
 
 export type NewStudentInput = z.infer<typeof schema>;
@@ -183,7 +193,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
             // 1. Create the student record with 0 initial deposit to avoid double-counting
             const student = await createStudent({
                 name: data.name.trim(),
-                seatNo: data.seatNo,
+                seatNo: data.seatNo || "",
                 address: data.address,
                 aadharNo: data.aadharNo,
                 dateOfJoining: (data.dateOfJoining || new Date().toISOString()).slice(0, 10),
@@ -248,7 +258,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 id: student.id,
                 name: data.name,
                 phone: data.mobile || "",
-                seat: data.seatNo,
+                seat: data.seatNo || "N/A",
                 validity: activeUntil,
                 regNo: student.regNo,
                 joiningDate: joiningDateStr,
