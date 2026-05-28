@@ -70,10 +70,10 @@ interface Props {
 
 export default function EditStudentDialog({ open, student, onOpenChange, onSaved, isReAdmission = false }: Props) {
     const { toast } = useToast();
-    const [showSuccess, setShowSuccess] = useState<{ 
-        name: string, 
-        phone: string, 
-        amount: string, 
+    const [showSuccess, setShowSuccess] = useState<{
+        name: string,
+        phone: string,
+        amount: string,
         validity: string,
         isReAdmission?: boolean,
         regNo?: string,
@@ -122,8 +122,8 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 guardianName: student.guardianName || "",
                 guardianMobile: student.guardianMobile || "",
                 gender: (student.gender?.toUpperCase() as "MALE" | "FEMALE" | "OTHER") || "MALE",
-                dateOfJoining: isReAdmission 
-                    ? new Date().toISOString().slice(0, 10) 
+                dateOfJoining: isReAdmission
+                    ? new Date().toISOString().slice(0, 10)
                     : (student.dateOfJoining?.slice(0, 10) || ""),
                 seasonalFees: student.seasonalFees ?? 0,
                 feesDeposited: 0,
@@ -159,22 +159,22 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
             const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
 
             if (isReAdmission) {
-               // Re-admission starts a fresh financial cycle. 
-               // We reset the cumulative counter to only the current deposit.
-               setStudentMeta(student.id, { 
-                   feesDeposited: deposited,
-                   photo: data.photo
-               });
+                // Re-admission starts a fresh financial cycle. 
+                // We reset the cumulative counter to only the current deposit.
+                setStudentMeta(student.id, {
+                    feesDeposited: deposited,
+                    photo: data.photo
+                });
             } else if (deposited > 0) {
-               // Normal payment/renewal adds to the existing cycle
-               setStudentMeta(student.id, { 
-                   feesDeposited: existingFees + deposited,
-                   photo: data.photo
-               });
+                // Normal payment/renewal adds to the existing cycle
+                setStudentMeta(student.id, {
+                    feesDeposited: existingFees + deposited,
+                    photo: data.photo
+                });
             } else {
-               setStudentMeta(student.id, {
-                   photo: data.photo
-               });
+                setStudentMeta(student.id, {
+                    photo: data.photo
+                });
             }
 
             await updateStudent(student.id, {
@@ -277,9 +277,9 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             <h3 className="text-lg font-bold text-slate-800 tracking-tight">Identity Details</h3>
                         </div>
                         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-                            <PhotoUpload 
-                                value={watchedPhoto} 
-                                onChange={(val) => setValue("photo", val)} 
+                            <PhotoUpload
+                                value={watchedPhoto}
+                                onChange={(val) => setValue("photo", val)}
                                 name={watchedName}
                                 className="shrink-0 rounded-full"
                             />
@@ -316,20 +316,20 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 </div>
                             </div>
                         </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="dateOfJoining" className="text-[10px] font-bold uppercase tracking-wider pl-1 text-slate-400">
-                                    Joining Date
-                                </Label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                    <Input 
-                                        id="dateOfJoining" 
-                                        type="date" 
-                                        className="h-12 pl-11 rounded-2xl border-slate-200"
-                                        {...register("dateOfJoining")} 
-                                    />
-                                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dateOfJoining" className="text-[10px] font-bold uppercase tracking-wider pl-1 text-slate-400">
+                                Joining Date
+                            </Label>
+                            <div className="relative">
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                <Input
+                                    id="dateOfJoining"
+                                    type="date"
+                                    className="h-12 pl-11 rounded-2xl border-slate-200"
+                                    {...register("dateOfJoining")}
+                                />
                             </div>
+                        </div>
                     </section>
 
                     <section className="space-y-6">
@@ -422,12 +422,12 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                         <Button type="button" variant="ghost" className="h-13 rounded-2xl px-8 font-bold text-slate-400 mt-2 sm:mt-0" onClick={() => onOpenChange(false)}>Discard</Button>
                         <Button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none h-13 min-w-[200px] rounded-2xl bg-slate-900 text-white font-black shadow-xl shadow-slate-200/50 hover:bg-primary transition-all active:scale-[0.98]">
                             {isSubmitting ? (
-                              <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Processing...</>
+                                <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Processing...</>
                             ) : (
-                              <>
-                                <Save className="mr-2 h-5 w-5" />
-                                {isReAdmission ? "Finalize Re-admission" : "Save Profile"}
-                              </>
+                                <>
+                                    <Save className="mr-2 h-5 w-5" />
+                                    {isReAdmission ? "Finalize Re-admission" : "Save Profile"}
+                                </>
                             )}
                         </Button>
                     </DialogFooter>
@@ -439,10 +439,10 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                         setShowSuccess(null);
                         // Trigger close of main dialog after success closes
                         if (student) {
-                           getStudent(student.id).then(updated => {
-                               onSaved(updated);
-                               onOpenChange(false);
-                           });
+                            getStudent(student.id).then(updated => {
+                                onSaved(updated);
+                                onOpenChange(false);
+                            });
                         }
                     }
                 }}>
@@ -503,9 +503,9 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                         <MessageSquare className="h-5 w-5" />
                                         {showSuccess?.isReAdmission ? "Send Welcome Back Receipt" : "Send Renewal Receipt"}
                                     </Button>
-                                    
-                                    <Button 
-                                        variant="ghost" 
+
+                                    <Button
+                                        variant="ghost"
                                         className="w-full h-12 rounded-xl font-bold text-slate-400"
                                         onClick={() => {
                                             setShowSuccess(null);
@@ -527,6 +527,6 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 </Dialog>
             </DialogContent>
         </Dialog>
-    ); 
+    );
 }
 

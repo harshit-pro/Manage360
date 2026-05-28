@@ -39,8 +39,8 @@ export default function LiveSeatMap({ onSelectSeat, selectedSeat, className }: L
       
       const studentMap = new Map<string, Student>();
       if (Array.isArray(allStudents)) {
-          // Use same logic as dashboard but more inclusive
-          allStudents.forEach(s => {
+          // Use same logic as dashboard
+          allStudents.filter(s => s.isEnrolled !== false).forEach(s => {
             if (s.seatNo) {
               const raw = String(s.seatNo).trim().toUpperCase();
               studentMap.set(raw, s);
