@@ -146,7 +146,7 @@ export default function Signup() {
                                         <div className="h-8 w-1.5 bg-primary rounded-full" />
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-foreground font-mono leading-none">
-                                                {form.regPrefix || "LIB"}{String(1).padStart(form.totalSeats ? String(form.totalSeats).length : 3, "0")}
+                                                {form.regPrefix || "LIB"}{String(1).padStart(4, "0")}
                                             </span>
                                             <span className="text-[9px] text-muted-foreground uppercase font-medium mt-0.5">Registration Card Number</span>
                                         </div>
