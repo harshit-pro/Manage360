@@ -27,11 +27,9 @@ public class RegNoServiceImpl implements RegNoService {
 
         String prefix = library.getRegPrefix();
         int seq = library.getNextRegSeq();
-        int totalSeats = library.getTotalSeats() != null ? library.getTotalSeats() : 100;
-        int width = String.valueOf(totalSeats).length();
-
-        String format = String.format("%%s%%0%dd", width);
-        String regNo = String.format(format, prefix, seq);
+        
+        // Use fixed width of 4 digits
+        String regNo = String.format("%s%04d", prefix, seq);
 
         // increment sequence
         library.setNextRegSeq(seq + 1);
@@ -48,10 +46,8 @@ public class RegNoServiceImpl implements RegNoService {
 
         String prefix = library.getRegPrefix();
         int seq = library.getNextRegSeq();
-        int totalSeats = library.getTotalSeats() != null ? library.getTotalSeats() : 100;
-        int width = String.valueOf(totalSeats).length();
-
-        String format = String.format("%%s%%0%dd", width);
-        return String.format(format, prefix, seq);
+        
+        // Use fixed width of 4 digits
+        return String.format("%s%04d", prefix, seq);
     }
 }
