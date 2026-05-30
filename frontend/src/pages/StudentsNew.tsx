@@ -62,21 +62,44 @@ const baseSchema = z.object({
     guardianName: z.string().optional(),
     guardianMobile: z.string().min(10).max(15).optional(),
     gender: z.enum(["male", "female", "other"]).default("male"),
-    seasonalFees: z.coerce.number().nonnegative().default(500),
-    feesDeposited: z.coerce.number().nonnegative().default(0),
+    seasonalFees: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().nonnegative().optional()),
+    feesDeposited: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().nonnegative().optional()),
     isEnrolled: z.boolean().default(true),
-    membershipMonths: z.coerce.number().int().positive().default(1),
+    membershipMonths: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().int().positive().optional()),
     paymentMethod: z.enum(["cash", "upi", "card"]).default("cash"),
     photo: z.string().optional(),
 });
 
 const schema = baseSchema.superRefine((data, ctx) => {
-    if (data.isEnrolled && (!data.seatNo || data.seatNo.trim() === "")) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Seat No is required when marked active",
-            path: ["seatNo"]
-        });
+    if (data.isEnrolled) {
+        if (!data.seatNo || data.seatNo.trim() === "") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Seat No is required when marked active",
+                path: ["seatNo"]
+            });
+        }
+        if (data.seasonalFees === undefined) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Required for active student",
+                path: ["seasonalFees"]
+            });
+        }
+        if (data.feesDeposited === undefined) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Required for active student",
+                path: ["feesDeposited"]
+            });
+        }
+        if (data.membershipMonths === undefined) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Required for active student",
+                path: ["membershipMonths"]
+            });
+        }
     }
 });
 
@@ -141,9 +164,9 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     const watchedSeat = watch("seatNo");
     const watchedReg = watch("regNo");
     const watchedJoiningDate = watch("dateOfJoining");
-    const watchedSeasonalFees = watch("seasonalFees") as number;
-    const watchedFeesDeposited = watch("feesDeposited") as number;
-    const watchedMembershipMonths = watch("membershipMonths") as number;
+    const watchedSeasonalFees = Number(watch("seasonalFees")) || 0;
+    const watchedFeesDeposited = Number(watch("feesDeposited")) || 0;
+    const watchedMembershipMonths = watch("membershipMonths");
     const watchedPhoto = watch("photo");
 
     const resolvedMembershipMonths = useMemo(() => {
@@ -190,6 +213,10 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
     const onSubmit = async (data: NewStudentInput) => {
         try {
+            const seasonalFeesVal = data.seasonalFees || 0;
+            const feesDepositedVal = data.feesDeposited || 0;
+            const membershipMonthsVal = data.membershipMonths || 1;
+
             // 1. Create the student record with 0 initial deposit to avoid double-counting
             const student = await createStudent({
                 name: data.name.trim(),
@@ -201,23 +228,23 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 guardianName: data.guardianName,
                 guardianMobile: data.guardianMobile,
                 gender: data.gender.toUpperCase(),
-                seasonalFees: data.seasonalFees,
+                seasonalFees: seasonalFeesVal,
                 feesDeposited: 0, // Explicitly 0 here
                 photo: data.photo,
                 isEnrolled: data.isEnrolled,
             });
 
             // 2. Process the formal membership payment
-            if (data.feesDeposited > 0 || data.membershipMonths > 0) {
-                const seasonal = data.seasonalFees;
+            if (data.isEnrolled && (feesDepositedVal > 0 || membershipMonthsVal > 0)) {
+                const seasonal = seasonalFeesVal;
                 let months: number;
                 let amount: number;
                 
-                if (data.feesDeposited > 0) {
-                    months = data.membershipMonths;
-                    amount = data.feesDeposited;
+                if (feesDepositedVal > 0) {
+                    months = membershipMonthsVal;
+                    amount = feesDepositedVal;
                 } else {
-                    months = data.membershipMonths;
+                    months = membershipMonthsVal;
                     amount = seasonal * months;
                 }
 
@@ -262,9 +289,9 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 validity: activeUntil,
                 regNo: student.regNo,
                 joiningDate: joiningDateStr,
-                monthlyRate: `₹${data.seasonalFees.toLocaleString("en-IN")}`,
-                deposited: `₹${data.feesDeposited.toLocaleString("en-IN")}`,
-                pending: `₹${Math.max(0, (data.seasonalFees * resolvedMembershipMonths) - data.feesDeposited).toLocaleString("en-IN")}`,
+                monthlyRate: `₹${seasonalFeesVal.toLocaleString("en-IN")}`,
+                deposited: `₹${feesDepositedVal.toLocaleString("en-IN")}`,
+                pending: `₹${Math.max(0, (seasonalFeesVal * resolvedMembershipMonths) - feesDepositedVal).toLocaleString("en-IN")}`,
                 period: `${resolvedMembershipMonths} Month(s)`,
                 photo: data.photo
             });
@@ -438,11 +465,13 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Monthly Rate (₹)</Label>
-                                        <Input type="number" className="h-12 rounded-2xl border-slate-200 font-black" {...register("seasonalFees", { valueAsNumber: true })} />
+                                        <Input type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 rounded-2xl border-slate-200 font-black" {...register("seasonalFees")} />
+                                        {errors.seasonalFees && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.seasonalFees.message}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Admission Fee Submitted (₹)</Label>
-                                        <Input type="number" className="h-12 rounded-2xl border-slate-200 font-black text-emerald-600" {...register("feesDeposited", { valueAsNumber: true })} />
+                                        <Input type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 rounded-2xl border-slate-200 font-black text-emerald-600" {...register("feesDeposited")} />
+                                        {errors.feesDeposited && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.feesDeposited.message}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Payment Channel</Label>
@@ -461,9 +490,12 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Membership Duration (Months)</Label>
                                         <div className="relative">
                                           <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                          <Input type="number" min="1" className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary" {...register("membershipMonths", { valueAsNumber: true })} />
+                                          <Input type="number" min="1" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary" {...register("membershipMonths")} />
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground pl-1">Sets the validity period for this payment.</p>
+                                        <div className="flex flex-col gap-1">
+                                          {errors.membershipMonths && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.membershipMonths.message}</p>}
+                                          <p className="text-[10px] text-muted-foreground pl-1">Sets the validity period for this payment.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </section>
