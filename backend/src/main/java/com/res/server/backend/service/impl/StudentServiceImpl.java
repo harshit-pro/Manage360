@@ -50,7 +50,12 @@ public class StudentServiceImpl implements StudentService {
         Membership membership = new Membership();
         membership.setLibrary(library);
         membership.setStudent(saved);
-        membership.setActiveUntil(LocalDate.now().minusDays(1));
+        if (saved.getIsEnrolled() != null && saved.getIsEnrolled()) {
+            LocalDate doj = saved.getDateOfJoining() != null ? saved.getDateOfJoining() : LocalDate.now();
+            membership.setActiveUntil(doj.minusDays(1));
+        } else {
+            membership.setActiveUntil(null);
+        }
         membership.setStatus(MembershipStatus.EXPIRED);
         membershipRepository.save(membership);
 

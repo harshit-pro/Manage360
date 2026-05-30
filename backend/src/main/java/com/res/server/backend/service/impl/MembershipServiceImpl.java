@@ -44,7 +44,7 @@ public class MembershipServiceImpl implements MembershipService {
                 LocalDate today = LocalDate.now();
                 LocalDate anchor = student.getDateOfJoining() != null ? student.getDateOfJoining() : today;
                 LocalDate newActiveUntil;
-                
+
                 if (months == 0) {
                         // Clearing dues only: keep current validity
                         newActiveUntil = membership.getActiveUntil();
@@ -52,25 +52,33 @@ public class MembershipServiceImpl implements MembershipService {
                                 newActiveUntil = anchor.minusDays(1); // Default to expired if never set
                         }
                 } else if (membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
-                        // Still active (inclusive through activeUntil day): extend from current period end
+                        // Still active (inclusive through activeUntil day): extend from current period
+                        // end
                         newActiveUntil = membership.getActiveUntil().plusMonths(months);
                 } else {
-                        // Expired or first payment: align to the student's monthly billing cycle
-                        // anchor (joining date), advance month-by-month until the period end is
-                        // after today, then apply the purchased months. Mirrors frontend cycle logic.
-                        LocalDate cycleEnd = firstPeriodEndStrictlyAfter(anchor, today);
-                        newActiveUntil = cycleEnd.plusMonths(months - 1L);
+                        // Check if this is the first payment (activeUntil is null or exactly anchor - 1 day)
+                        boolean isFirstPayment = membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
+                        
+                        if (isFirstPayment) {
+                                // First payment always starts exactly from the joining date
+                                newActiveUntil = anchor.plusMonths(months);
+                        } else {
+                                // Expired renewal: start a new cycle covering 'today' aligned with anchor date
+                                LocalDate cycleEnd = firstPeriodEndStrictlyAfter(anchor, today);
+                                newActiveUntil = cycleEnd.plusMonths(months - 1L);
+                        }
                 }
 
                 membership.setActiveUntil(newActiveUntil);
                 membership.setStatus(MembershipStatus.ACTIVE);
                 membership.setLastPaymentMethod(method);
 
-                // 🔥 Update student's cumulative fees to reflect this payment and the months purchased
+                // 🔥 Update student's cumulative fees to reflect this payment and the months
+                // purchased
                 int currentDue = student.getTotalFeesDue() != null ? student.getTotalFeesDue() : 0;
                 int seasonalRate = student.getSeasonalFees() != null ? student.getSeasonalFees() : 0;
                 student.setTotalFeesDue(currentDue + (months * seasonalRate));
-                
+
                 int currentDeposited = student.getFeesDeposited() != null ? student.getFeesDeposited() : 0;
                 student.setFeesDeposited(currentDeposited + amount);
                 studentRepository.save(student);
@@ -91,7 +99,10 @@ public class MembershipServiceImpl implements MembershipService {
                 return new MembershipRenewResponse(payment.getId(), newActiveUntil, MembershipStatus.ACTIVE);
         }
 
-        /** First calendar month boundary strictly after {@code cursor}, stepping from {@code anchor}. */
+        /**
+         * First calendar month boundary strictly after {@code cursor}, stepping from
+         * {@code anchor}.
+         */
         private static LocalDate firstPeriodEndStrictlyAfter(LocalDate anchor, LocalDate cursor) {
                 LocalDate end = anchor;
                 while (!end.isAfter(cursor)) {
