@@ -16,7 +16,7 @@ public class CorsConfig {
     // backend is running on http://localhost:8080, without CORS configuration,
     // the browser will block the requests from frontend to backend due to same-origin policy
 
-    @Value("${app.cors.allowed-origins}")
+    @Value("${app.cors.allowed-origins:http://localhost:5174,http://localhost:5173,http://localhost:3000}")
     private String allowedOrigins;
 
     @Bean
