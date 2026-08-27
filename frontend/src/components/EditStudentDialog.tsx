@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { format, addMonths, parseISO } from "date-fns";
-import { Student, updateStudent, getStudent, toggleEnrollment, renewMembership, setStudentMeta, isSeatAvailable } from "@/lib/students";
+import { Student, updateStudent, getStudent, toggleEnrollment, renewMembership, setStudentMeta, isSeatAvailable, uploadProfileImage } from "@/lib/students";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
@@ -54,7 +54,7 @@ const schema = z.object({
     dateOfJoining: z.string().optional(),
     seasonalFees: z.coerce.number().nonnegative().optional(),
     feesDeposited: z.coerce.number().nonnegative().optional(),
-    photo: z.string().optional(),
+    photo: z.any().optional(),
 });
 
 type EditFormOutput = z.output<typeof schema>;
@@ -163,17 +163,17 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 // We reset the cumulative counter to only the current deposit.
                 setStudentMeta(student.id, {
                     feesDeposited: deposited,
-                    photo: data.photo
+                    photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             } else if (deposited > 0) {
                 // Normal payment/renewal adds to the existing cycle
                 setStudentMeta(student.id, {
                     feesDeposited: existingFees + deposited,
-                    photo: data.photo
+                    photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             } else {
                 setStudentMeta(student.id, {
-                    photo: data.photo
+                    photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             }
 
@@ -188,9 +188,13 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 gender: data.gender,
                 seasonalFees: seasonal,
                 dateOfJoining: joiningDate,
-                photo: data.photo,
+                photo: typeof data.photo === "string" ? data.photo : undefined,
                 ...(isReAdmission ? { isEnrolled: true } : {}),
             });
+
+            if (data.photo instanceof File) {
+                await uploadProfileImage(student.id, data.photo);
+            }
 
             if (isReAdmission) {
                 await toggleEnrollment(student.id, true);
@@ -452,7 +456,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                             <div className="relative z-10 flex flex-col items-center text-center">
                                 <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border-4 border-white ring-8 ring-white/10">
                                     {showSuccess?.photo ? (
-                                        <img src={showSuccess.photo} alt="Avatar" className="h-full w-full object-cover" />
+                                        <img src={showSuccess.photo instanceof File ? URL.createObjectURL(showSuccess.photo) : showSuccess.photo} alt="Avatar" className="h-full w-full object-cover" />
                                     ) : (
                                         <RefreshCw className="h-10 w-10 text-primary" />
                                     )}

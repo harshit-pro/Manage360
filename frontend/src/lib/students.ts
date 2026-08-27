@@ -16,6 +16,7 @@ export interface StudentMeta {
 
 export interface Student {
     photo: string;
+    profileImageUrl?: string;
     id: string;
     regNo: string;
     name: string;
@@ -91,7 +92,7 @@ function normalizeStudent(raw: any): Student {
 
     return {
         ...raw,
-        photo: meta.photo || raw.photo || "",
+        photo: raw.profileImageUrl || meta.photo || raw.photo || "",
         activeUntil,
         feesDeposited,
         isExpired: dateExpired || backendSaysExpired,
@@ -170,6 +171,18 @@ export async function toggleEnrollment(studentId: string, enroll: boolean): Prom
 export async function updateStudent(studentId: string, payload: any): Promise<Student> {
     await api.put(`/students/${studentId}`, payload);
     return await getStudent(studentId);
+}
+
+/** Upload profile image to backend */
+export async function uploadProfileImage(studentId: string, file: File): Promise<void> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    await api.post(`/students/${studentId}/profile-image`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
 }
 
 /** Renew membership for a student */

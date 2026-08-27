@@ -10,43 +10,43 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit, setStudentMeta, isSeatAvailable } from "@/lib/students";
+import { createStudent, nextRegNo, nextStudentCode, renewMembership, membershipMonthsFromDeposit, setStudentMeta, isSeatAvailable, uploadProfileImage } from "@/lib/students";
 import { deleteDraft } from "@/lib/drafts";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { 
-  UserPlus, 
-  User, 
-  MapPin, 
-  Smartphone, 
-  CreditCard, 
-  ShieldCheck, 
-  Calendar, 
-  Hash, 
-  Users, 
-  ArrowRight,
-  Info,
-  CheckCircle2,
-  AlertCircle,
-  Gem,
-  Lock,
-  Wallet,
-  Clock,
-  MessageSquare,
-  Camera
+import {
+    UserPlus,
+    User,
+    MapPin,
+    Smartphone,
+    CreditCard,
+    ShieldCheck,
+    Calendar,
+    Hash,
+    Users,
+    ArrowRight,
+    Info,
+    CheckCircle2,
+    AlertCircle,
+    Gem,
+    Lock,
+    Wallet,
+    Clock,
+    MessageSquare,
+    Camera
 } from "lucide-react";
 import PhotoUpload from "@/components/PhotoUpload";
 import { Badge } from "@/components/ui/badge";
 import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import LiveSeatMap from "@/components/LiveSeatMap";
 // import { sendWhatsApp, waTemplates } from "@/lib/whatsapp";
@@ -67,7 +67,7 @@ const baseSchema = z.object({
     isEnrolled: z.boolean().default(true),
     membershipMonths: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().int().positive().optional()),
     paymentMethod: z.enum(["cash", "upi", "card"]).default("cash"),
-    photo: z.string().optional(),
+    photo: z.any().optional(),
 });
 
 const schema = baseSchema.superRefine((data, ctx) => {
@@ -109,11 +109,11 @@ type NewStudentFormInput = z.input<typeof schema>;
 export default function StudentsNew({ embedded = false }: { embedded?: boolean }) {
     const { toast } = useToast();
     const nav = useNavigate();
-    const [registeredStudent, setRegisteredStudent] = useState<{ 
-        id: string, 
-        name: string, 
-        phone: string, 
-        seat: string, 
+    const [registeredStudent, setRegisteredStudent] = useState<{
+        id: string,
+        name: string,
+        phone: string,
+        seat: string,
         validity: string,
         regNo: string,
         joiningDate: string,
@@ -157,7 +157,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
             // Store draft ID so we can delete it after successful registration
             sessionStorage.setItem("cl.draftId", draft.id || "");
             sessionStorage.removeItem("cl.draftToRegister");
-        } catch {}
+        } catch { }
     }, [setValue]);
 
     const watchedName = watch("name");
@@ -230,16 +230,21 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 gender: data.gender.toUpperCase(),
                 seasonalFees: seasonalFeesVal,
                 feesDeposited: 0, // Explicitly 0 here
-                photo: data.photo,
+                photo: typeof data.photo === "string" ? data.photo : undefined,
                 isEnrolled: data.isEnrolled,
             });
+
+            // 1.5 Upload photo if it's a File
+            if (data.photo instanceof File) {
+                await uploadProfileImage(student.id, data.photo);
+            }
 
             // 2. Process the formal membership payment
             if (data.isEnrolled && (feesDepositedVal > 0 || membershipMonthsVal > 0)) {
                 const seasonal = seasonalFeesVal;
                 let months: number;
                 let amount: number;
-                
+
                 if (feesDepositedVal > 0) {
                     months = membershipMonthsVal;
                     amount = feesDepositedVal;
@@ -259,14 +264,14 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 });
 
                 // Update metadata for accurate validity tracking in UI and cumulative fees
-                setStudentMeta(student.id, { 
+                setStudentMeta(student.id, {
                     currentValidityMonths: months,
                     feesDeposited: amount,
-                    photo: data.photo
+                    photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             } else {
                 setStudentMeta(student.id, {
-                    photo: data.photo
+                    photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             }
 
@@ -280,7 +285,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
             const activeUntil = activeUntilPreview ? format(activeUntilPreview, "dd MMM, yyyy") : "N/A";
             const joiningDateStr = data.dateOfJoining ? format(new Date(data.dateOfJoining), "dd MMM, yyyy") : format(new Date(), "dd MMM, yyyy");
-            
+
             setRegisteredStudent({
                 id: student.id,
                 name: data.name,
@@ -307,31 +312,31 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     return (
         <div className={cn("flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000", embedded && "pb-6")}>
             {!embedded && (
-              <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs">
-                    <Gem className="h-4 w-4" />
-                    Premium Onboarding
-                  </div>
-                  <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">Add New Student</h1>
-                  <p className="text-slate-500 font-medium max-w-xl">Initialize a high-class membership record with automated enrollment and ID generation.</p>
-              </div>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs">
+                        <Gem className="h-4 w-4" />
+                        Premium Onboarding
+                    </div>
+                    <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">Add New Student</h1>
+                    <p className="text-slate-500 font-medium max-w-xl">Initialize a high-class membership record with automated enrollment and ID generation.</p>
+                </div>
             )}
 
             {/* Mobile Preview & Seat Selection */}
             <div className="lg:hidden flex flex-col gap-6">
-              <RegistrationSummaryCard 
-                name={watchedName} 
-                seat={watchedSeat} 
-                joiningDate={watchedJoiningDate} 
-                months={resolvedMembershipMonths} 
-                activeUntil={activeUntilPreview} 
-                photo={watchedPhoto}
-              />
-              <LiveSeatMap 
-                onSelectSeat={(seat) => setValue("seatNo", seat)} 
-                selectedSeat={watchedSeat}
-                className="w-full shadow-lg"
-              />
+                <RegistrationSummaryCard
+                    name={watchedName}
+                    seat={watchedSeat}
+                    joiningDate={watchedJoiningDate}
+                    months={resolvedMembershipMonths}
+                    activeUntil={activeUntilPreview}
+                    photo={watchedPhoto}
+                />
+                <LiveSeatMap
+                    onSelectSeat={(seat) => setValue("seatNo", seat)}
+                    selectedSeat={watchedSeat}
+                    className="w-full shadow-lg"
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -355,11 +360,11 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                 </div>
 
                                 <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-                                    <PhotoUpload 
-                                      value={watchedPhoto} 
-                                      onChange={(val) => setValue("photo", val)} 
-                                      name={watchedName}
-                                      className="shrink-0"
+                                    <PhotoUpload
+                                        value={watchedPhoto}
+                                        onChange={(val) => setValue("photo", val)}
+                                        name={watchedName}
+                                        className="shrink-0"
                                     />
                                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                                         <div className="space-y-2">
@@ -370,8 +375,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                         <div className="space-y-2">
                                             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Aadhar Identification</Label>
                                             <div className="relative">
-                                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                              <Input placeholder="12-digit UID" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("aadharNo")} />
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                                <Input placeholder="12-digit UID" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("aadharNo")} />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -390,8 +395,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                         <div className="space-y-2">
                                             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Primary Mobile No</Label>
                                             <div className="relative">
-                                              <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                              <Input placeholder="+91 00000 00000" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("mobile")} />
+                                                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                                <Input placeholder="+91 00000 00000" className="h-12 pl-10 rounded-2xl border-slate-200" {...register("mobile")} />
                                             </div>
                                         </div>
                                     </div>
@@ -439,18 +444,18 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Seat Assignment</Label>
                                         <div className="relative">
-                                          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                          <Input placeholder="e.g. S-22" className="h-12 pl-10 pr-12 rounded-2xl border-slate-200 font-bold" {...register("seatNo")} />
-                                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                            {seatStatus === "checking" && <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
-                                            {seatStatus === "available" && <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in zoom-in duration-300" />}
-                                            {seatStatus === "taken" && (
-                                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-500 animate-in slide-in-from-right-2 duration-300">
-                                                <AlertCircle className="h-3 w-3" />
-                                                <span className="text-[9px] font-black uppercase tracking-tighter">Taken</span>
-                                              </div>
-                                            )}
-                                          </div>
+                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                            <Input placeholder="e.g. S-22" className="h-12 pl-10 pr-12 rounded-2xl border-slate-200 font-bold" {...register("seatNo")} />
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                {seatStatus === "checking" && <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+                                                {seatStatus === "available" && <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in zoom-in duration-300" />}
+                                                {seatStatus === "taken" && (
+                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-500 animate-in slide-in-from-right-2 duration-300">
+                                                        <AlertCircle className="h-3 w-3" />
+                                                        <span className="text-[9px] font-black uppercase tracking-tighter">Taken</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         {errors.seatNo && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.seatNo.message}</p>}
                                     </div>
@@ -489,12 +494,12 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Membership Duration (Months)</Label>
                                         <div className="relative">
-                                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                          <Input type="number" min="1" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary" {...register("membershipMonths")} />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                            <Input type="number" min="1" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary" {...register("membershipMonths")} />
                                         </div>
                                         <div className="flex flex-col gap-1">
-                                          {errors.membershipMonths && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.membershipMonths.message}</p>}
-                                          <p className="text-[10px] text-muted-foreground pl-1">Sets the validity period for this payment.</p>
+                                            {errors.membershipMonths && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.membershipMonths.message}</p>}
+                                            <p className="text-[10px] text-muted-foreground pl-1">Sets the validity period for this payment.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -502,19 +507,19 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
 
                             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 pt-8">
                                 <div className="flex items-center gap-4">
-                                  <Switch checked={watch("isEnrolled")} onCheckedChange={(v) => setValue("isEnrolled", v)} className="data-[state=checked]:bg-emerald-500" />
-                                  <div className="flex flex-col">
-                                    <Label className="font-bold text-slate-800">Assign Instant Enrollment</Label>
-                                    <span className="text-xs text-slate-400">Mark as active member immediately upon registration.</span>
-                                  </div>
+                                    <Switch checked={watch("isEnrolled")} onCheckedChange={(v) => setValue("isEnrolled", v)} className="data-[state=checked]:bg-emerald-500" />
+                                    <div className="flex flex-col">
+                                        <Label className="font-bold text-slate-800">Assign Instant Enrollment</Label>
+                                        <span className="text-xs text-slate-400">Mark as active member immediately upon registration.</span>
+                                    </div>
                                 </div>
-                                <Button 
-                                  type="submit" 
-                                  disabled={isSubmitting} 
-                                  className="h-16 px-12 rounded-[1.5rem] bg-slate-950 text-white font-black text-lg gap-3 shadow-2xl hover:bg-primary transition-all active:scale-95"
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="h-16 px-12 rounded-[1.5rem] bg-slate-950 text-white font-black text-lg gap-3 shadow-2xl hover:bg-primary transition-all active:scale-95"
                                 >
-                                  {isSubmitting ? "Finalizing..." : "Complete Registration"}
-                                  <ArrowRight className="h-5 w-5" />
+                                    {isSubmitting ? "Finalizing..." : "Complete Registration"}
+                                    <ArrowRight className="h-5 w-5" />
                                 </Button>
                             </div>
                         </form>
@@ -524,19 +529,19 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 {/* Desktop Summary Sidebar */}
                 <div className="hidden lg:flex flex-col gap-6 h-full">
                     <div className="sticky top-24 space-y-6">
-                        <RegistrationSummaryCard 
-                            name={watchedName} 
-                            seat={watchedSeat} 
-                            joiningDate={watchedJoiningDate} 
-                            months={resolvedMembershipMonths} 
-                            activeUntil={activeUntilPreview} 
+                        <RegistrationSummaryCard
+                            name={watchedName}
+                            seat={watchedSeat}
+                            joiningDate={watchedJoiningDate}
+                            months={resolvedMembershipMonths}
+                            activeUntil={activeUntilPreview}
                             photo={watchedPhoto}
                         />
 
-                        <LiveSeatMap 
-                          onSelectSeat={(seat) => setValue("seatNo", seat)} 
-                          selectedSeat={watchedSeat}
-                          className="w-full"
+                        <LiveSeatMap
+                            onSelectSeat={(seat) => setValue("seatNo", seat)}
+                            selectedSeat={watchedSeat}
+                            className="w-full"
                         />
 
                         <div className="p-4 rounded-3xl border border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1 text-center">
@@ -568,16 +573,16 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                             </DialogDescription>
                         </div>
                     </div>
-                    
+
                     <div className="p-8 space-y-6 bg-white">
                         <div className="space-y-3">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 text-center">Send confirmation to student</h4>
                             <div className="grid grid-cols-1 gap-3">
-                                <Button 
+                                <Button
                                     onClick={() => {
                                         if (!registeredStudent) return;
-                                        sendWhatsApp({ 
-                                            phone: registeredStudent.phone, 
+                                        sendWhatsApp({
+                                            phone: registeredStudent.phone,
                                             message: waTemplates.registration({
                                                 name: registeredStudent.name,
                                                 regNo: registeredStudent.regNo,
@@ -596,13 +601,13 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                     <MessageSquare className="h-5 w-5" />
                                     Send Reg. Receipt
                                 </Button>
-                                <Button 
+                                <Button
                                     variant="outline"
                                     onClick={() => {
                                         if (!registeredStudent) return;
-                                        sendWhatsApp({ 
-                                            phone: registeredStudent.phone, 
-                                            message: waTemplates.welcome(registeredStudent.name) 
+                                        sendWhatsApp({
+                                            phone: registeredStudent.phone,
+                                            message: waTemplates.welcome(registeredStudent.name)
                                         });
                                     }}
                                     className="h-16 rounded-2xl border-slate-200 font-bold flex items-center justify-center gap-3 hover:bg-slate-50"
@@ -615,8 +620,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                     </div>
 
                     <DialogFooter className="p-8 pt-0 bg-white">
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className="w-full h-12 rounded-xl font-bold text-slate-400"
                             onClick={() => {
                                 setRegisteredStudent(null);
@@ -637,54 +642,54 @@ function RegistrationSummaryCard({ name, seat, joiningDate, months, activeUntil,
         <Card className="rounded-[2.5rem] border-emerald-100 bg-emerald-50/20 shadow-xl overflow-hidden">
             <CardHeader className="p-6 bg-emerald-600 text-white">
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Registration Summary
+                    <CheckCircle2 className="h-5 w-5" />
+                    Registration Summary
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
                 <div className="flex flex-col items-center text-center p-4">
-                  <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-3xl font-black text-emerald-600 mb-4 border-4 border-white ring-4 ring-emerald-100 overflow-hidden">
-                    {photo ? (
-                       <img src={photo} alt="Preview" className="h-full w-full object-cover" />
-                    ) : (
-                       name ? name.charAt(0).toUpperCase() : "?"
-                    )}
-                  </div>
-                  <h4 className="text-xl font-black text-slate-900 truncate w-full">{name || "New Student"}</h4>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Preview Card</p>
+                    <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-3xl font-black text-emerald-600 mb-4 border-4 border-white ring-4 ring-emerald-100 overflow-hidden">
+                        {photo ? (
+                            <img src={photo instanceof File ? URL.createObjectURL(photo) : photo} alt="Preview" className="h-full w-full object-cover" />
+                        ) : (
+                            name ? name.charAt(0).toUpperCase() : "?"
+                        )}
+                    </div>
+                    <h4 className="text-xl font-black text-slate-900 truncate w-full">{name || "New Student"}</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Preview Card</p>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-y border-emerald-100/50">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-emerald-100/50">
-                          <Hash className="h-3 w-3 text-emerald-600" />
+                    <div className="flex items-center justify-between py-3 border-y border-emerald-100/50">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-emerald-100/50">
+                                <Hash className="h-3 w-3 text-emerald-600" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500">Seat Assignment</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-500">Seat Assignment</span>
-                      </div>
-                      <span className="text-sm font-black text-slate-800">{seat || "PENDING"}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-3 border-b border-emerald-100/50">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-emerald-100/50">
-                          <Calendar className="h-3 w-3 text-emerald-600" />
+                        <span className="text-sm font-black text-slate-800">{seat || "PENDING"}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-3 border-b border-emerald-100/50">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-emerald-100/50">
+                                <Calendar className="h-3 w-3 text-emerald-600" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500">Start Date</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-500">Start Date</span>
-                      </div>
-                      <span className="text-sm font-black text-slate-800">{joiningDate ? format(new Date(joiningDate), "dd MMM, yyyy") : "TBD"}</span>
-                  </div>
-                  <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-bold uppercase">Membership Period</span>
-                      <Badge className="bg-emerald-500 text-white font-black px-3">{months} Month(s)</Badge>
+                        <span className="text-sm font-black text-slate-800">{joiningDate ? format(new Date(joiningDate), "dd MMM, yyyy") : "TBD"}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Valid Until</span>
-                      <span className="text-base font-black text-emerald-600">
-                        {activeUntil ? format(activeUntil, "dd MMM, yyyy") : "N/A"}
-                      </span>
+                    <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 font-bold uppercase">Membership Period</span>
+                            <Badge className="bg-emerald-500 text-white font-black px-3">{months} Month(s)</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Valid Until</span>
+                            <span className="text-base font-black text-emerald-600">
+                                {activeUntil ? format(activeUntil, "dd MMM, yyyy") : "N/A"}
+                            </span>
+                        </div>
                     </div>
-                  </div>
                 </div>
             </CardContent>
         </Card>

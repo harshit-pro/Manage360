@@ -106,6 +106,7 @@ export default function RenewMembership() {
   const dueStudents = useMemo(() => {
     return students
       .filter((s) => {
+        if (!s.isEnrolled) return false;
         if (!s.activeUntil) return true;
         const expiryDate = new Date(s.activeUntil);
         const fiveDaysFromNow = addDays(new Date(), 5);
