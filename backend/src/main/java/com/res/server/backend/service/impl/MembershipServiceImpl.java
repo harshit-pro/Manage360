@@ -31,7 +31,7 @@ public class MembershipServiceImpl implements MembershipService {
 
         @Override
         public MembershipRenewResponse renew(UUID studentId, int months, int amount, PaymentMethod method,
-                        String note) {
+                        String note, boolean resetValidity) {
                 UUID libraryId = LibraryContext.getLibraryId();
 
                 Student student = studentRepository.findByIdAndLibrary_Id(studentId, libraryId)
@@ -51,13 +51,13 @@ public class MembershipServiceImpl implements MembershipService {
                         if (newActiveUntil == null) {
                                 newActiveUntil = anchor.minusDays(1); // Default to expired if never set
                         }
-                } else if (membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
+                } else if (!resetValidity && membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
                         // Still active (inclusive through activeUntil day): extend from current period
                         // end
                         newActiveUntil = membership.getActiveUntil().plusMonths(months);
                 } else {
                         // Check if this is the first payment (activeUntil is null or exactly anchor - 1 day)
-                        boolean isFirstPayment = membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
+                        boolean isFirstPayment = resetValidity || membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
                         
                         if (isFirstPayment) {
                                 // First payment always starts exactly from the joining date

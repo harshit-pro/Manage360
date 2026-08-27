@@ -14,6 +14,8 @@ public interface StudentMapper {
     @Mapping(target = "library", ignore = true)
     @Mapping(target = "regNo", ignore = true)
     @Mapping(target = "membership", ignore = true)
+    @Mapping(target = "totalFeesDue", ignore = true)
+    @Mapping(target = "profileImageUrl", ignore = true)
     Student toEntity(StudentCreateRequest request);
 
     StudentResponse toResponse(Student student);

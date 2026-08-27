@@ -4,6 +4,7 @@ import com.res.server.backend.dto.mapper.StudentMapper;
 import com.res.server.backend.dto.request.StudentCreateRequest;
 import com.res.server.backend.dto.response.StudentResponse;
 import com.res.server.backend.entity.Student;
+import com.res.server.backend.service.ImageService;
 import com.res.server.backend.service.StudentService;
 import com.res.server.backend.service.context.LibraryContext;
 import jakarta.validation.Valid;
@@ -11,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -21,6 +24,7 @@ public class StudentController {
 
     private final StudentService studentService;
     private final StudentMapper studentMapper;
+    private final Optional<ImageService> imageService;
 
     @PostMapping
     public StudentResponse create(@Valid @RequestBody StudentCreateRequest request) {
@@ -74,4 +78,18 @@ public class StudentController {
     // rest api endpoints:
     // for students who are currently actively enrolled, we can call the search
     // endpoint with isEnrolled=true
+
+    // f
+    @PostMapping("/{id}/profile-image")
+    public StudentResponse uploadProfileImage(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file
+    ) {
+        if (imageService.isEmpty()) {
+            throw new RuntimeException("Image upload service is not available. Please configure Cloudinary credentials.");
+        }
+        String imageUrl = imageService.get().uploadProfileImage(file);
+        Student updated = studentService.updateProfileImage(id, imageUrl);
+        return studentMapper.toResponse(updated);
+    }
 }

@@ -15,4 +15,5 @@ public class MembershipRenewRequest {
     @NotNull
     private PaymentMethod method;
     private String note;
+    private boolean resetValidity;
 }

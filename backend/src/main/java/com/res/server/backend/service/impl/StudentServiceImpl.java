@@ -6,7 +6,6 @@ import com.res.server.backend.entity.Student;
 import com.res.server.backend.repository.LibraryRepository;
 import com.res.server.backend.repository.MembershipRepository;
 import com.res.server.backend.repository.StudentRepository;
-import com.res.server.backend.repository.spec.StudentSpecifications;
 import com.res.server.backend.service.RegNoService;
 import com.res.server.backend.service.StudentService;
 import com.res.server.backend.entity.enums.MembershipStatus;
@@ -175,5 +174,11 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public String getNextRegNo() {
         return regNoService.peek();
+    }
+
+    public Student updateProfileImage(UUID id, String imageUrl) {
+        Student student = getById(id);
+        student.setProfileImageUrl(imageUrl);
+        return studentRepository.save(student);
     }
 }

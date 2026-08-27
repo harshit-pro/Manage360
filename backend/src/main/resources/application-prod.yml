@@ -30,9 +30,16 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
+cloudinary:
+  enabled: ${CLOUDINARY_ENABLED:false}
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+
 # Notes:
 # - Replace <PROD_DB_HOST>, <PROD_DB_USER>, and <PROD_DB_PASSWORD> with actual production values.
 # - Ensure the JWT secret is securely managed in production environments.
 # - CORS_ALLOWED_ORIGINS can be set via environment variable with multiple URLs separated by commas
+# - Set CLOUDINARY_ENABLED=true and provide Cloudinary credentials to enable image uploads
 server:
   port: 8080

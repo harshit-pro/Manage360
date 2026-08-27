@@ -28,7 +28,7 @@ public class MembershipController {
             @Valid @RequestBody MembershipRenewRequest req
     ) {
         return membershipService.renew(
-                studentId, req.getMonths(), req.getAmount(), req.getMethod(), req.getNote()
+                studentId, req.getMonths(), req.getAmount(), req.getMethod(), req.getNote(), req.isResetValidity()
         );
     }
     @GetMapping("/due")

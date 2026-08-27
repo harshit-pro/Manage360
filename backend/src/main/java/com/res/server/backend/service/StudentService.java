@@ -1,6 +1,5 @@
 package com.res.server.backend.service;
 
-import com.res.server.backend.dto.response.StudentResponse;
 import com.res.server.backend.entity.Student;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +25,8 @@ public interface StudentService {
     boolean isSeatAvailable(String seatNo);
 
     String getNextRegNo();
+
+    Student updateProfileImage(UUID studentId, String imageUrl);
 
     // Page<StudentResponse> getAllStudents(Pageable pageable);
 }

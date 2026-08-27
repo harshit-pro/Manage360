@@ -59,4 +59,7 @@ public class Student extends BaseEntity {
     private Integer feesDeposited = 0;
     private Integer totalFeesDue = 0;
     private Boolean isEnrolled = true;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 }
