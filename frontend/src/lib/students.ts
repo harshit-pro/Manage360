@@ -186,7 +186,14 @@ export async function uploadProfileImage(studentId: string, file: File): Promise
 }
 
 /** Renew membership for a student */
-export async function renewMembership(studentId: string, payload: any): Promise<Student> {
+export async function renewMembership(studentId: string, payload: {
+    months: number;
+    amount: number;
+    method: "CASH" | "UPI" | "CARD";
+    note?: string;
+    resetValidity?: boolean;
+    dateOfJoining?: string; // Passed to update student before if needed, but not used by /renew directly
+}): Promise<Student> {
     await api.post(`/memberships/${studentId}/renew`, payload);
     return await getStudent(studentId);
 }

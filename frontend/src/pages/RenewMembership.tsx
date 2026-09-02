@@ -277,7 +277,8 @@ export default function RenewMembership() {
         months: monthsNum,
         amount: deposit,
         method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-        note: isReAdmission ? "Re-admission Payment" : note
+        note: isReAdmission ? "Re-admission Payment" : note,
+        resetValidity: isReAdmission
       });
 
       setStudentMeta(foundStudent.id, {

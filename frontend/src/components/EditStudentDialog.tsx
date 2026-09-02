@@ -54,6 +54,7 @@ const schema = z.object({
     dateOfJoining: z.string().optional(),
     seasonalFees: z.coerce.number().nonnegative().optional(),
     feesDeposited: z.coerce.number().nonnegative().optional(),
+    months: z.coerce.number().min(1).optional(),
     photo: z.any().optional(),
 });
 
@@ -127,6 +128,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     : (student.dateOfJoining?.slice(0, 10) || ""),
                 seasonalFees: student.seasonalFees ?? 0,
                 feesDeposited: 0,
+                months: 1,
             });
         }
     }, [student, reset, isReAdmission]);
@@ -135,16 +137,24 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
     const watchedJoiningDate = watch("dateOfJoining");
     const watchedSeasonal = Number(watch("seasonalFees")) || 0;
     const watchedDeposited = Number(watch("feesDeposited")) || 0;
+    const watchedMonths = Number(watch("months")) || 1;
     const watchedPhoto = watch("photo");
 
+    useEffect(() => {
+        if (watchedSeasonal > 0 && watchedDeposited > 0) {
+            const calculatedMonths = Math.floor(watchedDeposited / watchedSeasonal);
+            if (calculatedMonths > 0) {
+                setValue("months", calculatedMonths);
+            }
+        }
+    }, [watchedDeposited, watchedSeasonal, setValue]);
+
     const durationInfo = (() => {
-        if (!watchedJoiningDate || watchedSeasonal <= 0) return null;
-        const months = Math.floor(watchedDeposited / watchedSeasonal);
-        if (months <= 0) return null;
+        if (!watchedJoiningDate || watchedMonths <= 0) return null;
         try {
             const joining = parseISO(watchedJoiningDate);
-            const activeUntil = addMonths(joining, months);
-            return { months, activeUntil };
+            const activeUntil = addMonths(joining, watchedMonths);
+            return { months: watchedMonths, activeUntil };
         } catch { return null; }
     })();
 
@@ -153,7 +163,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         const seasonal = Number(data.seasonalFees) || 0;
         const deposited = Number(data.feesDeposited) || 0;
         const joiningDate = data.dateOfJoining || new Date().toISOString().slice(0, 10);
-        const months = Math.floor(deposited / seasonal) || 1;
+        const months = Number(data.months) || 1;
 
         try {
             const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
@@ -207,6 +217,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     amount: deposited,
                     method: "CASH",
                     note: isReAdmission ? "Re-Admission Finalization" : "Renewal",
+                    resetValidity: isReAdmission,
                     dateOfJoining: joiningDate
                 });
                 await new Promise(r => setTimeout(r, 400));
@@ -369,6 +380,13 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 <div className="relative group">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">₹</span>
                                     <Input id="edit-feesDeposited" type="number" placeholder="e.g. 600" className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-emerald-600 bg-emerald-50/5 focus:bg-white transition-all" {...register("feesDeposited")} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-months" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Duration (Months)</Label>
+                                <div className="relative group">
+                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                                    <Input id="edit-months" type="number" placeholder="e.g. 1" className="h-12 pl-10 rounded-2xl border-slate-200 font-black text-primary bg-primary/5 focus:bg-white transition-all" {...register("months")} />
                                 </div>
                             </div>
                             <div className="flex flex-col justify-center">
