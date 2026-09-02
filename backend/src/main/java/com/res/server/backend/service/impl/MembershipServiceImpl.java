@@ -51,19 +51,18 @@ public class MembershipServiceImpl implements MembershipService {
                         if (newActiveUntil == null) {
                                 newActiveUntil = anchor.minusDays(1); // Default to expired if never set
                         }
-                } else if (!resetValidity && membership.getActiveUntil() != null && !membership.getActiveUntil().isBefore(today)) {
-                        // Still active (inclusive through activeUntil day): extend from current period
-                        // end
+                } else if (!resetValidity && membership.getActiveUntil() != null && !membership.getActiveUntil().equals(anchor.minusDays(1))) {
+                        // Always extend from current period end, even if expired
                         newActiveUntil = membership.getActiveUntil().plusMonths(months);
                 } else {
                         // Check if this is the first payment (activeUntil is null or exactly anchor - 1 day)
-                        boolean isFirstPayment = resetValidity || membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
+                        boolean isFirstPayment = membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
                         
                         if (isFirstPayment) {
                                 // First payment always starts exactly from the joining date
                                 newActiveUntil = anchor.plusMonths(months);
                         } else {
-                                // Expired renewal: start a new cycle covering 'today' aligned with anchor date
+                                // Reset validity: start a new cycle covering 'today' aligned with anchor date
                                 LocalDate cycleEnd = firstPeriodEndStrictlyAfter(anchor, today);
                                 newActiveUntil = cycleEnd.plusMonths(months - 1L);
                         }
