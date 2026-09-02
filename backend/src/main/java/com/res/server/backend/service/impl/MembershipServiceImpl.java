@@ -55,14 +55,14 @@ public class MembershipServiceImpl implements MembershipService {
                         // Always extend from current period end, even if expired
                         newActiveUntil = membership.getActiveUntil().plusMonths(months);
                 } else {
-                        // Check if this is the first payment (activeUntil is null or exactly anchor - 1 day)
-                        boolean isFirstPayment = membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
+                        // Check if this is the first payment or a reset (activeUntil is null or exactly anchor - 1 day)
+                        boolean isFirstPayment = resetValidity || membership.getActiveUntil() == null || membership.getActiveUntil().equals(anchor.minusDays(1));
                         
                         if (isFirstPayment) {
-                                // First payment always starts exactly from the joining date
+                                // First payment or explicit reset always starts exactly from the joining date
                                 newActiveUntil = anchor.plusMonths(months);
                         } else {
-                                // Reset validity: start a new cycle covering 'today' aligned with anchor date
+                                // Fallback cycle calculation
                                 LocalDate cycleEnd = firstPeriodEndStrictlyAfter(anchor, today);
                                 newActiveUntil = cycleEnd.plusMonths(months - 1L);
                         }
