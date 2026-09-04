@@ -10,6 +10,7 @@ export interface StudentMeta {
     isEnrolled?: boolean;
     seasonalFees?: number;
     feesDeposited?: number;
+    totalFeesDue?: number; // Added to sync with local fees deposited overrides
     currentValidityMonths?: number; // Critical for enforcing user-requested validity logic
     photo?: string; // Base64 encoded profile picture
 }
@@ -81,9 +82,13 @@ function normalizeStudent(raw: any): Student {
     // AGGREGATE FEES: If metadata has a cumulative feesDeposited, it overrides the backend's (potentially static) value.
 
     // We treat the backend's value as a 'base' if metadata is empty.
-    const feesDeposited = (meta.feesDeposited && meta.feesDeposited > 0)
+    const feesDeposited = (meta.feesDeposited !== undefined)
         ? meta.feesDeposited
         : (raw.feesDeposited || 0);
+
+    const totalFeesDue = (meta.totalFeesDue !== undefined)
+        ? meta.totalFeesDue
+        : (raw.totalFeesDue || 0);
 
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -95,6 +100,7 @@ function normalizeStudent(raw: any): Student {
         photo: raw.profileImageUrl || meta.photo || raw.photo || "",
         activeUntil,
         feesDeposited,
+        totalFeesDue,
         isExpired: dateExpired || backendSaysExpired,
         membership: m,
         meta

@@ -142,7 +142,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
 
     useEffect(() => {
         if (watchedSeasonal > 0 && watchedDeposited > 0) {
-            const calculatedMonths = Math.floor(watchedDeposited / watchedSeasonal);
+            const calculatedMonths = Math.ceil(watchedDeposited / watchedSeasonal);
             if (calculatedMonths > 0) {
                 setValue("months", calculatedMonths);
             }
@@ -211,7 +211,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                 await new Promise(r => setTimeout(r, 600));
             }
 
-            if (deposited > 0) {
+            if (deposited > 0 || isReAdmission) {
                 await renewMembership(student.id, {
                     months,
                     amount: deposited,
@@ -236,7 +236,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     regNo: updated.regNo,
                     seatNo: updated.seatNo,
                     monthlyRate: `₹${seasonal.toLocaleString("en-IN")}`,
-                    pending: `₹${Math.max(0, seasonal - deposited).toLocaleString("en-IN")}`,
+                    pending: `₹${Math.max(0, (seasonal * months) - deposited).toLocaleString("en-IN")}`,
                     period: `${months} Month(s)`,
                     joiningDate: format(new Date(joiningDate), "dd MMM, yyyy"),
                     photo: data.photo

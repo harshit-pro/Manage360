@@ -242,16 +242,8 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
             // 2. Process the formal membership payment
             if (data.isEnrolled && (feesDepositedVal > 0 || membershipMonthsVal > 0)) {
                 const seasonal = seasonalFeesVal;
-                let months: number;
-                let amount: number;
-
-                if (feesDepositedVal > 0) {
-                    months = membershipMonthsVal;
-                    amount = feesDepositedVal;
-                } else {
-                    months = membershipMonthsVal;
-                    amount = seasonal * months;
-                }
+                let months: number = membershipMonthsVal;
+                let amount: number = feesDepositedVal;
 
                 await renewMembership(student.id, {
                     months,

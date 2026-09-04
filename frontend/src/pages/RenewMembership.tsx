@@ -55,6 +55,13 @@ type RenewForm = {
   seatNo: string;
 };
 
+const parseRupeeInt = (raw: string): number => {
+  const digits = raw.replace(/\D/g, "");
+  if (digits === "") return 0;
+  const n = parseInt(digits, 10);
+  return Number.isFinite(n) ? n : 0;
+};
+
 export default function RenewMembership() {
   const [query, setQuery] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
@@ -87,6 +94,17 @@ export default function RenewMembership() {
   const [isReAdmission, setIsReAdmission] = useState(false);
   const [seatStatus, setSeatStatus] = useState<"available" | "taken" | "checking" | null>(null);
   const watchedSeat = renewForm.watch("seatNo");
+  const watchedSeasonal = parseRupeeInt(renewForm.watch("seasonalFees") || "0");
+  const watchedDeposited = parseRupeeInt(renewForm.watch("feesDeposited") || "0");
+
+  useEffect(() => {
+    if (watchedSeasonal > 0 && watchedDeposited > 0) {
+      const calculatedMonths = Math.ceil(watchedDeposited / watchedSeasonal);
+      if (calculatedMonths > 0) {
+        renewForm.setValue("months", String(calculatedMonths));
+      }
+    }
+  }, [watchedDeposited, watchedSeasonal, renewForm]);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -127,12 +145,6 @@ export default function RenewMembership() {
 
   const getMethodFor = (s: Student): "cash" | "upi" | "card" => methodByUser[s.id] ?? "cash";
 
-  const parseRupeeInt = (raw: string): number => {
-    const digits = raw.replace(/\D/g, "");
-    if (digits === "") return 0;
-    const n = parseInt(digits, 10);
-    return Number.isFinite(n) ? n : 0;
-  };
 
   const getFeeInputs = (s: Student) =>
     feeInputs[s.id] ?? {
@@ -144,9 +156,22 @@ export default function RenewMembership() {
   const updateFeeInput = (s: Student, field: "seasonalFees" | "feesDeposited" | "months", value: string) => {
     const digitsOnly = value.replace(/\D/g, "");
     const current = getFeeInputs(s);
+    let newMonths = current.months;
+
+    if (field === "feesDeposited" || field === "seasonalFees") {
+        const deposit = field === "feesDeposited" ? parseRupeeInt(digitsOnly) : parseRupeeInt(current.feesDeposited);
+        const seasonal = field === "seasonalFees" ? parseRupeeInt(digitsOnly) : parseRupeeInt(current.seasonalFees);
+        if (seasonal > 0 && deposit > 0) {
+            const calcMonths = Math.ceil(deposit / seasonal);
+            if (calcMonths > 0) {
+                newMonths = String(calcMonths);
+            }
+        }
+    }
+
     setFeeInputs((prev) => ({
       ...prev,
-      [s.id]: { ...current, [field]: digitsOnly },
+      [s.id]: { ...current, [field]: digitsOnly, ...(field !== "months" ? { months: newMonths } : {}) },
     }));
   };
 
@@ -171,7 +196,8 @@ export default function RenewMembership() {
     try {
       // Update metadata for accurate validity tracking in UI and cumulative fees
       const existingMonths = student.meta?.currentValidityMonths || 0;
-      const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
+      const existingFees = student.meta?.feesDeposited ?? student.feesDeposited ?? 0;
+      const existingTotalDue = student.meta?.totalFeesDue ?? student.totalFeesDue ?? 0;
       const isReAdmission = student.isExpired || !student.isEnrolled;
 
       const updated = await renewMembership(student.id, {
@@ -182,7 +208,8 @@ export default function RenewMembership() {
       });
 
       setStudentMeta(student.id, {
-        feesDeposited: isReAdmission ? deposit : (existingFees + deposit)
+        feesDeposited: isReAdmission ? deposit : (existingFees + deposit),
+        totalFeesDue: isReAdmission ? (seasonal * months) : (existingTotalDue + (seasonal * months))
       });
 
       setRenewedStudent({
@@ -271,7 +298,8 @@ export default function RenewMembership() {
 
       // 2. SYNC LOCAL OVERRIDE: Update cumulative months and fees for the strict validity logic
       const currentMonths = foundStudent.meta?.currentValidityMonths || 0;
-      const currentFees = foundStudent.meta?.feesDeposited || foundStudent.feesDeposited || 0;
+      const currentFees = foundStudent.meta?.feesDeposited ?? foundStudent.feesDeposited ?? 0;
+      const currentTotalDue = foundStudent.meta?.totalFeesDue ?? foundStudent.totalFeesDue ?? 0;
 
       const updated = await renewMembership(foundStudent.id, {
         months: monthsNum,
@@ -283,6 +311,7 @@ export default function RenewMembership() {
 
       setStudentMeta(foundStudent.id, {
         feesDeposited: isReAdmission ? deposit : (currentFees + deposit),
+        totalFeesDue: isReAdmission ? (seasonal * monthsNum) : (currentTotalDue + (seasonal * monthsNum)),
         seasonalFees: seasonal // Persist the new rate in meta too
       });
 
@@ -299,7 +328,7 @@ export default function RenewMembership() {
         regNo: updated.regNo,
         seatNo: updated.seatNo,
         monthlyRate: `₹${seasonal.toLocaleString("en-IN")}`,
-        pending: `₹${Math.max(0, seasonal - deposit).toLocaleString("en-IN")}`,
+        pending: `₹${Math.max(0, (seasonal * monthsNum) - deposit).toLocaleString("en-IN")}`,
         period: `${monthsNum} Month(s)`,
         joiningDate: joiningDateStr
       } as any);
@@ -332,7 +361,6 @@ export default function RenewMembership() {
               Effortlessly manage student renewals and keep your library seats filled.
             </p>
           </div>
-
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -405,7 +433,8 @@ export default function RenewMembership() {
                 const isPaid = paidIds.has(s.id);
                 const isLoading = renewingIds.has(s.id);
                 const fees = getFeeInputs(s);
-                const months = membershipMonthsFromDeposit(parseRupeeInt(fees.seasonalFees), parseRupeeInt(fees.feesDeposited));
+                const inputMonths = parseInt(fees.months, 10);
+                const isMonthsValid = !isNaN(inputMonths) && inputMonths > 0;
 
                 return (
                   <Card key={s.id} className={cn(
@@ -507,7 +536,7 @@ export default function RenewMembership() {
 
                           <div className="flex items-center gap-3">
                             <Button
-                              disabled={isLoading || isPaid || months === null}
+                              disabled={isLoading || isPaid || !isMonthsValid}
                               onClick={() => handleRenewRow(s)}
                               className={cn(
                                 "flex-1 h-11 rounded-xl font-bold shadow-lg shadow-primary/10 transition-all",
