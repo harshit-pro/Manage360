@@ -31,7 +31,7 @@ public class MembershipServiceImpl implements MembershipService {
 
         @Override
         public MembershipRenewResponse renew(UUID studentId, int months, int amount, PaymentMethod method,
-                        String note, boolean resetValidity) {
+                        String note, boolean resetValidity, int discount) {
                 UUID libraryId = LibraryContext.getLibraryId();
                 Student student = studentRepository.findByIdAndLibrary_Id(studentId, libraryId)
                                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
@@ -74,12 +74,21 @@ public class MembershipServiceImpl implements MembershipService {
                 // 🔥 Update student's cumulative fees to reflect this payment and the months
                 // purchased
                 int currentDue = student.getTotalFeesDue() != null ? student.getTotalFeesDue() : 0;
-                int seasonalRate = student.getSeasonalFees() != null ? student.getSeasonalFees() : 0;
-                student.setTotalFeesDue(currentDue + (months * seasonalRate));
-
                 int currentDeposited = student.getFeesDeposited() != null ? student.getFeesDeposited() : 0;
+                int seasonalRate = student.getSeasonalFees() != null ? student.getSeasonalFees() : 0;
+
+                if (resetValidity) {
+                        currentDue = 0;
+                        currentDeposited = 0;
+                }
+
+                student.setTotalFeesDue(currentDue + (months * seasonalRate) - discount);
                 student.setFeesDeposited(currentDeposited + amount);
                 studentRepository.save(student);
+
+                if (discount > 0) {
+                        note = (note == null || note.trim().isEmpty()) ? "Discount: ₹" + discount : note.trim() + ". Discount: ₹" + discount;
+                }
 
                 Payment payment = new Payment();
                 payment.setLibrary(student.getLibrary());

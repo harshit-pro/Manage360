@@ -16,4 +16,5 @@ public class MembershipRenewRequest {
     private PaymentMethod method;
     private String note;
     private boolean resetValidity;
+    private int discount;
 }
