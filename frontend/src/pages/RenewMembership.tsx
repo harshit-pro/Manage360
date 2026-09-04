@@ -49,6 +49,7 @@ type FindForm = { email: string };
 type RenewForm = {
   seasonalFees: string;
   feesDeposited: string;
+  discount: string;
   months: string;
   method: "cash" | "upi" | "card";
   note?: string;
@@ -67,7 +68,7 @@ export default function RenewMembership() {
   const [refreshTick, setRefreshTick] = useState(0);
   const [methodByUser, setMethodByUser] = useState<Record<string, "cash" | "upi" | "card">>({});
   const [students, setStudents] = useState<Student[]>([]);
-  const [feeInputs, setFeeInputs] = useState<Record<string, { seasonalFees: string; feesDeposited: string; months: string }>>({});
+  const [feeInputs, setFeeInputs] = useState<Record<string, { seasonalFees: string; feesDeposited: string; discount: string; months: string }>>({});
   const [renewingIds, setRenewingIds] = useState<Set<string>>(new Set());
   const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -88,7 +89,7 @@ export default function RenewMembership() {
 
   const { toast } = useToast();
   const find = useForm<FindForm>();
-  const renewForm = useForm<RenewForm>({ defaultValues: { seasonalFees: "", feesDeposited: "", months: "1", method: "cash", seatNo: "" } });
+  const renewForm = useForm<RenewForm>({ defaultValues: { seasonalFees: "", feesDeposited: "", discount: "0", months: "1", method: "cash", seatNo: "" } });
   const { isSubmitting } = renewForm.formState;
 
   const [isReAdmission, setIsReAdmission] = useState(false);
@@ -149,11 +150,12 @@ export default function RenewMembership() {
   const getFeeInputs = (s: Student) =>
     feeInputs[s.id] ?? {
       seasonalFees: String(s.seasonalFees ?? 0),
-      feesDeposited: String(s.seasonalFees ?? 0), // Default to monthly rate for the payment today
+      feesDeposited: String(s.seasonalFees ?? 0),
+      discount: "0",
       months: "1",
     };
 
-  const updateFeeInput = (s: Student, field: "seasonalFees" | "feesDeposited" | "months", value: string) => {
+  const updateFeeInput = (s: Student, field: "seasonalFees" | "feesDeposited" | "discount" | "months", value: string) => {
     const digitsOnly = value.replace(/\D/g, "");
     const current = getFeeInputs(s);
     let newMonths = current.months;
@@ -180,6 +182,7 @@ export default function RenewMembership() {
     const fees = getFeeInputs(student);
     const seasonal = parseRupeeInt(fees.seasonalFees);
     const deposit = parseRupeeInt(fees.feesDeposited);
+    const discount = parseRupeeInt(fees.discount || "0");
 
     if (seasonal < 1) {
       toast({
@@ -194,7 +197,6 @@ export default function RenewMembership() {
 
     setRenewingIds((prev) => new Set(prev).add(student.id));
     try {
-      // Update metadata for accurate validity tracking in UI and cumulative fees
       const existingMonths = student.meta?.currentValidityMonths || 0;
       const existingFees = student.meta?.feesDeposited ?? student.feesDeposited ?? 0;
       const existingTotalDue = student.meta?.totalFeesDue ?? student.totalFeesDue ?? 0;
@@ -204,12 +206,15 @@ export default function RenewMembership() {
         months,
         amount: deposit,
         method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
-        note: "Instant Renewal"
+        note: "Instant Renewal",
+        discount: discount,
+        resetValidity: isReAdmission,
+        dateOfJoining: isReAdmission ? new Date().toISOString().slice(0, 10) : undefined
       });
 
       setStudentMeta(student.id, {
         feesDeposited: isReAdmission ? deposit : (existingFees + deposit),
-        totalFeesDue: isReAdmission ? (seasonal * months) : (existingTotalDue + (seasonal * months))
+        totalFeesDue: isReAdmission ? (seasonal * months) - discount : (existingTotalDue + (seasonal * months) - discount)
       });
 
       setRenewedStudent({
@@ -270,6 +275,7 @@ export default function RenewMembership() {
     renewForm.reset({
       seasonalFees: String(user.seasonalFees ?? 0),
       feesDeposited: String(user.feesDeposited ?? 0),
+      discount: "0",
       months: "1",
       method: "cash",
       note: "",
@@ -280,14 +286,13 @@ export default function RenewMembership() {
 
   const onRenew = async () => {
     if (!foundStudent) return;
-    const { seasonalFees, feesDeposited, method, note, months, seatNo } = renewForm.getValues();
+    const { seasonalFees, feesDeposited, discount, method, note, months, seatNo } = renewForm.getValues();
     const seasonal = parseRupeeInt(seasonalFees);
     const deposit = parseRupeeInt(feesDeposited);
+    const discountVal = parseRupeeInt(discount || "0");
     const monthsNum = parseInt(months as unknown as string, 10) || 1;
 
     try {
-      // 1. If Rate or Seat changed, update student record first
-      // This ensures PendingFees correctly calculates based on the NEW rate
       if (seasonal !== foundStudent.seasonalFees || seatNo !== foundStudent.seatNo) {
         await updateStudent(foundStudent.id, {
           seasonalFees: seasonal,
@@ -296,7 +301,6 @@ export default function RenewMembership() {
         });
       }
 
-      // 2. SYNC LOCAL OVERRIDE: Update cumulative months and fees for the strict validity logic
       const currentMonths = foundStudent.meta?.currentValidityMonths || 0;
       const currentFees = foundStudent.meta?.feesDeposited ?? foundStudent.feesDeposited ?? 0;
       const currentTotalDue = foundStudent.meta?.totalFeesDue ?? foundStudent.totalFeesDue ?? 0;
@@ -306,13 +310,14 @@ export default function RenewMembership() {
         amount: deposit,
         method: method.toUpperCase() as "CASH" | "UPI" | "CARD",
         note: isReAdmission ? "Re-admission Payment" : note,
+        discount: discountVal,
         resetValidity: isReAdmission
       });
 
       setStudentMeta(foundStudent.id, {
         feesDeposited: isReAdmission ? deposit : (currentFees + deposit),
-        totalFeesDue: isReAdmission ? (seasonal * monthsNum) : (currentTotalDue + (seasonal * monthsNum)),
-        seasonalFees: seasonal // Persist the new rate in meta too
+        totalFeesDue: isReAdmission ? (seasonal * monthsNum) - discountVal : (currentTotalDue + (seasonal * monthsNum) - discountVal),
+        seasonalFees: seasonal 
       });
 
       const activeUntilStr = updated.activeUntil ? format(new Date(updated.activeUntil), "dd MMM, yyyy") : "N/A";
@@ -323,12 +328,11 @@ export default function RenewMembership() {
         phone: updated.mobileNo,
         amount: `₹${deposit.toLocaleString("en-IN")}`,
         validity: activeUntilStr,
-        // Add more context for the re-admission template
         isReAdmission,
         regNo: updated.regNo,
         seatNo: updated.seatNo,
         monthlyRate: `₹${seasonal.toLocaleString("en-IN")}`,
-        pending: `₹${Math.max(0, (seasonal * monthsNum) - deposit).toLocaleString("en-IN")}`,
+        pending: `₹${Math.max(0, (seasonal * monthsNum) - discountVal - deposit).toLocaleString("en-IN")}`,
         period: `${monthsNum} Month(s)`,
         joiningDate: joiningDateStr
       } as any);
@@ -485,7 +489,7 @@ export default function RenewMembership() {
 
                         {/* Right Form Section */}
                         <div className="p-4 md:p-6 md:flex-1 bg-slate-50/30">
-                          <div className="grid grid-cols-2 gap-4 mb-4 sm:grid-cols-3">
+                          <div className="grid grid-cols-2 gap-4 mb-4 sm:grid-cols-4">
                             <div className="space-y-1.5">
                               <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Rate (₹)</Label>
                               <div className="relative">
@@ -504,6 +508,17 @@ export default function RenewMembership() {
                                   value={fees.feesDeposited}
                                   onChange={e => updateFeeInput(s, "feesDeposited", e.target.value)}
                                   className="h-10 bg-white border-slate-200 text-sm pl-7"
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Discount (₹)</Label>
+                              <div className="relative">
+                                <Input
+                                  value={fees.discount}
+                                  onChange={e => updateFeeInput(s, "discount", e.target.value)}
+                                  className="h-10 bg-white border-slate-200 text-sm pl-7 text-blue-600"
                                 />
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
                               </div>
@@ -708,7 +723,7 @@ export default function RenewMembership() {
                           <h3 className="text-lg font-bold text-slate-800">Financial Setup</h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Monthly Rate</Label>
                             <div className="relative group">
@@ -721,6 +736,13 @@ export default function RenewMembership() {
                             <div className="relative">
                               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">₹</span>
                               <Input className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-emerald-600 bg-emerald-50/10 focus:bg-white" {...renewForm.register("feesDeposited")} />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Discount</Label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 font-bold">₹</span>
+                              <Input className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-blue-600 bg-blue-50/10 focus:bg-white" {...renewForm.register("discount")} />
                             </div>
                           </div>
                         </div>

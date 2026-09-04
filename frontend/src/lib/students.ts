@@ -198,6 +198,7 @@ export async function renewMembership(studentId: string, payload: {
     method: "CASH" | "UPI" | "CARD";
     note?: string;
     resetValidity?: boolean;
+    discount?: number;
     dateOfJoining?: string; // Passed to update student before if needed, but not used by /renew directly
 }): Promise<Student> {
     await api.post(`/memberships/${studentId}/renew`, payload);

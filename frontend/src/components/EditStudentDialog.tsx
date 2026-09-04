@@ -54,6 +54,7 @@ const schema = z.object({
     dateOfJoining: z.string().optional(),
     seasonalFees: z.coerce.number().nonnegative().optional(),
     feesDeposited: z.coerce.number().nonnegative().optional(),
+    discount: z.coerce.number().nonnegative().optional().default(0),
     months: z.coerce.number().min(1).optional(),
     photo: z.any().optional(),
 });
@@ -128,6 +129,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     : (student.dateOfJoining?.slice(0, 10) || ""),
                 seasonalFees: student.seasonalFees ?? 0,
                 feesDeposited: 0,
+                discount: 0,
                 months: 1,
             });
         }
@@ -137,6 +139,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
     const watchedJoiningDate = watch("dateOfJoining");
     const watchedSeasonal = Number(watch("seasonalFees")) || 0;
     const watchedDeposited = Number(watch("feesDeposited")) || 0;
+    const watchedDiscount = Number(watch("discount")) || 0;
     const watchedMonths = Number(watch("months")) || 1;
     const watchedPhoto = watch("photo");
 
@@ -162,23 +165,27 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         if (!student) return;
         const seasonal = Number(data.seasonalFees) || 0;
         const deposited = Number(data.feesDeposited) || 0;
+        const discount = Number(data.discount) || 0;
         const joiningDate = data.dateOfJoining || new Date().toISOString().slice(0, 10);
         const months = Number(data.months) || 1;
 
         try {
             const existingFees = student.meta?.feesDeposited || student.feesDeposited || 0;
+            const existingTotalDue = student.meta?.totalFeesDue ?? student.totalFeesDue ?? 0;
 
             if (isReAdmission) {
                 // Re-admission starts a fresh financial cycle. 
                 // We reset the cumulative counter to only the current deposit.
                 setStudentMeta(student.id, {
                     feesDeposited: deposited,
+                    totalFeesDue: (seasonal * months) - discount,
                     photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             } else if (deposited > 0) {
                 // Normal payment/renewal adds to the existing cycle
                 setStudentMeta(student.id, {
                     feesDeposited: existingFees + deposited,
+                    totalFeesDue: existingTotalDue + (seasonal * months) - discount,
                     photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             } else {
@@ -218,6 +225,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     method: "CASH",
                     note: isReAdmission ? "Re-Admission Finalization" : "Renewal",
                     resetValidity: isReAdmission,
+                    discount,
                     dateOfJoining: joiningDate
                 });
                 await new Promise(r => setTimeout(r, 400));
@@ -236,7 +244,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                     regNo: updated.regNo,
                     seatNo: updated.seatNo,
                     monthlyRate: `₹${seasonal.toLocaleString("en-IN")}`,
-                    pending: `₹${Math.max(0, (seasonal * months) - deposited).toLocaleString("en-IN")}`,
+                    pending: `₹${Math.max(0, (seasonal * months) - discount - deposited).toLocaleString("en-IN")}`,
                     period: `${months} Month(s)`,
                     joiningDate: format(new Date(joiningDate), "dd MMM, yyyy"),
                     photo: data.photo
@@ -380,6 +388,13 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
                                 <div className="relative group">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">₹</span>
                                     <Input id="edit-feesDeposited" type="number" placeholder="e.g. 600" className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-emerald-600 bg-emerald-50/5 focus:bg-white transition-all" {...register("feesDeposited")} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-discount" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pl-1">Discount (₹)</Label>
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 font-bold">₹</span>
+                                    <Input id="edit-discount" type="number" placeholder="e.g. 100" className="h-12 pl-8 rounded-2xl border-slate-200 font-black text-blue-600 bg-blue-50/5 focus:bg-white transition-all" {...register("discount")} />
                                 </div>
                             </div>
                             <div className="space-y-2">

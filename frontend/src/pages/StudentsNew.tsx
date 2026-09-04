@@ -64,6 +64,7 @@ const baseSchema = z.object({
     gender: z.enum(["male", "female", "other"]).default("male"),
     seasonalFees: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().nonnegative().optional()),
     feesDeposited: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().nonnegative().optional()),
+    discount: z.preprocess((val) => val === "" || val === undefined ? 0 : Number(val), z.number().nonnegative().optional()),
     isEnrolled: z.boolean().default(true),
     membershipMonths: z.preprocess((val) => val === "" || val === undefined ? undefined : Number(val), z.number().int().positive().optional()),
     paymentMethod: z.enum(["cash", "upi", "card"]).default("cash"),
@@ -127,6 +128,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
         membershipMonths: 1,
         seasonalFees: 500,
         feesDeposited: 0,
+        discount: 0,
         gender: "male" as const,
         isEnrolled: true,
         paymentMethod: "cash" as const,
@@ -166,6 +168,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
     const watchedJoiningDate = watch("dateOfJoining");
     const watchedSeasonalFees = Number(watch("seasonalFees")) || 0;
     const watchedFeesDeposited = Number(watch("feesDeposited")) || 0;
+    const watchedDiscount = Number(watch("discount")) || 0;
     const watchedMembershipMonths = watch("membershipMonths");
     const watchedPhoto = watch("photo");
 
@@ -215,6 +218,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
         try {
             const seasonalFeesVal = data.seasonalFees || 0;
             const feesDepositedVal = data.feesDeposited || 0;
+            const discountVal = data.discount || 0;
             const membershipMonthsVal = data.membershipMonths || 1;
 
             // 1. Create the student record with 0 initial deposit to avoid double-counting
@@ -252,6 +256,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                         ? (data.paymentMethod.toUpperCase() as "CASH" | "UPI" | "CARD")
                         : "CASH",
                     note: "Initial Enrollment Payment",
+                    discount: discountVal,
                     dateOfJoining: (data.dateOfJoining || new Date().toISOString()).slice(0, 10)
                 });
 
@@ -259,6 +264,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 setStudentMeta(student.id, {
                     currentValidityMonths: months,
                     feesDeposited: amount,
+                    totalFeesDue: (seasonal * months) - discountVal,
                     photo: typeof data.photo === "string" ? data.photo : undefined
                 });
             } else {
@@ -288,7 +294,7 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                 joiningDate: joiningDateStr,
                 monthlyRate: `₹${seasonalFeesVal.toLocaleString("en-IN")}`,
                 deposited: `₹${feesDepositedVal.toLocaleString("en-IN")}`,
-                pending: `₹${Math.max(0, (seasonalFeesVal * resolvedMembershipMonths) - feesDepositedVal).toLocaleString("en-IN")}`,
+                pending: `₹${Math.max(0, (seasonalFeesVal * resolvedMembershipMonths) - discountVal - feesDepositedVal).toLocaleString("en-IN")}`,
                 period: `${resolvedMembershipMonths} Month(s)`,
                 photo: data.photo
             });
@@ -469,6 +475,10 @@ export default function StudentsNew({ embedded = false }: { embedded?: boolean }
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Admission Fee Submitted (₹)</Label>
                                         <Input type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 rounded-2xl border-slate-200 font-black text-emerald-600" {...register("feesDeposited")} />
                                         {errors.feesDeposited && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.feesDeposited.message}</p>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Discount Given (₹)</Label>
+                                        <Input type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} className="h-12 rounded-2xl border-slate-200 font-black text-blue-600" {...register("discount")} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 pl-1">Payment Channel</Label>
