@@ -33,7 +33,6 @@ public class MembershipServiceImpl implements MembershipService {
         public MembershipRenewResponse renew(UUID studentId, int months, int amount, PaymentMethod method,
                         String note, boolean resetValidity) {
                 UUID libraryId = LibraryContext.getLibraryId();
-
                 Student student = studentRepository.findByIdAndLibrary_Id(studentId, libraryId)
                                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
 
