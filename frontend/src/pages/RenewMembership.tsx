@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { format, addDays, isPast, differenceInDays } from "date-fns";
+import { format, addDays, addMonths, isPast, differenceInDays } from "date-fns";
 import { listStudents, searchStudents, Student, renewMembership, membershipMonthsFromDeposit, setStudentMeta, updateStudent, isSeatAvailable } from "@/lib/students";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -197,10 +197,16 @@ export default function RenewMembership() {
 
     setRenewingIds((prev) => new Set(prev).add(student.id));
     try {
-      const existingMonths = student.meta?.currentValidityMonths || 0;
       const existingFees = student.meta?.feesDeposited ?? student.feesDeposited ?? 0;
       const existingTotalDue = student.meta?.totalFeesDue ?? student.totalFeesDue ?? 0;
-      const isReAdmission = student.isExpired || !student.isEnrolled;
+      const isReAdmission = !student.isEnrolled;
+
+      if (isReAdmission) {
+        await updateStudent(student.id, {
+          isEnrolled: true,
+          dateOfJoining: new Date().toISOString().slice(0, 10)
+        });
+      }
 
       const updated = await renewMembership(student.id, {
         months,
@@ -293,11 +299,14 @@ export default function RenewMembership() {
     const monthsNum = parseInt(months as unknown as string, 10) || 1;
 
     try {
-      if (seasonal !== foundStudent.seasonalFees || seatNo !== foundStudent.seatNo) {
+      const isReAdmission = !foundStudent.isEnrolled;
+
+      if (seasonal !== foundStudent.seasonalFees || seatNo !== foundStudent.seatNo || isReAdmission) {
         await updateStudent(foundStudent.id, {
           seasonalFees: seasonal,
           seatNo: seatNo,
-          isEnrolled: true
+          isEnrolled: true,
+          ...(isReAdmission ? { dateOfJoining: new Date().toISOString().slice(0, 10) } : {})
         });
       }
 
