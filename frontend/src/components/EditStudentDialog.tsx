@@ -84,7 +84,7 @@ export default function EditStudentDialog({ open, student, onOpenChange, onSaved
         pending?: string,
         period?: string,
         joiningDate?: string,
-        photo?: string
+        photo?: string | File
     } | null>(null);
 
     const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<EditFormInput, any, EditFormOutput>({

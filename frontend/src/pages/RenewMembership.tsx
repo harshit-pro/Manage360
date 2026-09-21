@@ -277,7 +277,7 @@ export default function RenewMembership() {
 
     const user = match || results[0];
     setFoundStudent(user);
-    setIsReAdmission(user.isExpired || !user.isEnrolled);
+    setIsReAdmission(!user.isEnrolled);
     renewForm.reset({
       seasonalFees: String(user.seasonalFees ?? 0),
       feesDeposited: String(user.feesDeposited ?? 0),

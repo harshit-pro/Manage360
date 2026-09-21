@@ -261,3 +261,15 @@ export async function isSeatAvailable(seatNo: string): Promise<boolean> {
 }
 
 export const listStudents = listAllStudents;
+
+/** Change a student's seat to a new available seat */
+export async function changeSeat(studentId: string, newSeat: string): Promise<Student> {
+    const response = await api.post(`/students/${studentId}/change-seat`, null, { params: { newSeatNo: newSeat } });
+    return normalizeStudent(response.data);
+}
+
+/** Swap seats between a student and whoever is currently at the target seat */
+export async function swapSeat(studentId: string, targetSeat: string): Promise<Student> {
+    const response = await api.post(`/students/${studentId}/swap-seat`, null, { params: { targetSeatNo: targetSeat } });
+    return normalizeStudent(response.data);
+}

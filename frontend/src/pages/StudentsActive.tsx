@@ -24,7 +24,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import ManageSeatDialog from "@/components/ManageSeatDialog";
+import { MoreHorizontal, MoveRight, ArrowRightLeft } from "lucide-react";
 export default function StudentsActive({ embedded = false }: { embedded?: boolean }) {
     const [searchParams] = useSearchParams();
     const tab = searchParams.get("tab");
@@ -33,6 +40,8 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<"name" | "newest">("newest");
+    const [seatAction, setSeatAction] = useState<{ action: "change" | "swap" | null, student: Student | null }>({ action: null, student: null });
+
 
     useEffect(() => {
         const fetch = async () => {
@@ -210,14 +219,25 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
                                               </div>
                                             </TableCell>
                                             <TableCell className="text-right pr-10">
-                                                <Button 
-                                                  variant="ghost" 
-                                                  size="sm" 
-                                                  onClick={() => setSelected(s)} 
-                                                  className="h-12 px-6 rounded-2xl hover:bg-emerald-600 hover:text-white font-bold transition-all shadow-hover-emerald"
-                                                >
-                                                  View Profile <ChevronRight className="ml-2 h-4 w-4" />
-                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-xl">
+                                                        <DropdownMenuItem onClick={() => setSelected(s)} className="font-medium cursor-pointer">
+                                                            <Eye className="mr-2 h-4 w-4 text-emerald-600" /> View Profile
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => setSeatAction({ action: "change", student: s })} className="font-medium cursor-pointer">
+                                                            <MoveRight className="mr-2 h-4 w-4 text-slate-500" /> Change Seat
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => setSeatAction({ action: "swap", student: s })} className="font-medium cursor-pointer">
+                                                            <ArrowRightLeft className="mr-2 h-4 w-4 text-slate-500" /> Swap Seat
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -251,7 +271,24 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
                                                 <p className="text-xs text-slate-400 font-mono">{regOf(s)}</p>
                                             </div>
                                         </div>
-                                        <Badge className="rounded-xl px-3 py-1 bg-emerald-500/10 text-emerald-600 border-none font-black text-[10px] uppercase">Active</Badge>
+                                        <div className="flex items-center gap-2">
+                                            <Badge className="rounded-xl px-3 py-1 bg-emerald-500/10 text-emerald-600 border-none font-black text-[10px] uppercase">Active</Badge>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-xl w-48">
+                                                    <DropdownMenuItem onClick={() => setSeatAction({ action: "change", student: s })} className="font-medium cursor-pointer py-2.5">
+                                                        <MoveRight className="mr-2 h-4 w-4 text-slate-500" /> Change Seat
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setSeatAction({ action: "swap", student: s })} className="font-medium cursor-pointer py-2.5">
+                                                        <ArrowRightLeft className="mr-2 h-4 w-4 text-slate-500" /> Swap Seat
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-50">
@@ -292,8 +329,24 @@ export default function StudentsActive({ embedded = false }: { embedded?: boolea
             </Card>
 
             {selected && (
-                <StudentDetailsDialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)} student={selected} />
+                <StudentDetailsDialog 
+                    open={!!selected} 
+                    onOpenChange={(o) => !o && setSelected(null)} 
+                    student={selected as any} 
+                />
             )}
+
+            <ManageSeatDialog
+                action={seatAction.action}
+                student={seatAction.student}
+                onClose={() => setSeatAction({ action: null, student: null })}
+                onUpdate={(updated) => {
+                    setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
+                    // The swap operation also affects the other student, so we should ideally refetch the list
+                    // To be safe and show correct data for both students involved in a swap, let's refresh the page data
+                    window.location.reload(); 
+                }}
+            />
         </div>
     );
 }

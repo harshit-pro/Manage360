@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import type { StudentView } from "@/lib/students";
 import { format, parseISO, isPast } from "date-fns";
+import { Input } from "@/components/ui/input";
 import { 
   User, 
   MapPin, 
@@ -25,9 +26,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-type Props = { open: boolean; onOpenChange: (o: boolean) => void; student: StudentView };
+type Props = { open: boolean; onOpenChange: (o: boolean) => void; student: StudentView; onUpdate?: (updated: StudentView) => void };
 
-export default function StudentDetailsDialog({ open, onOpenChange, student }: Props) {
+export default function StudentDetailsDialog({ open, onOpenChange, student, onUpdate }: Props) {
     const activeUntil = student.activeUntil ?? student.membership?.activeUntil;
     const membershipStatus = student.membership?.status ?? (student.isExpired ? "EXPIRED" : "ACTIVE");
     const isExpired = student.isExpired ?? membershipStatus === "EXPIRED";
