@@ -92,4 +92,18 @@ public class StudentController {
         Student updated = studentService.updateProfileImage(id, imageUrl);
         return studentMapper.toResponse(updated);
     }
+
+    @PostMapping("/{id}/change-seat")
+    public StudentResponse changeSeat(
+            @PathVariable UUID id,
+            @RequestParam String newSeatNo) {
+        return studentMapper.toResponse(studentService.changeSeat(id, newSeatNo));
+    }
+
+    @PostMapping("/{id}/swap-seat")
+    public StudentResponse swapSeat(
+            @PathVariable UUID id,
+            @RequestParam String targetSeatNo) {
+        return studentMapper.toResponse(studentService.swapSeats(id, targetSeatNo));
+    }
 }

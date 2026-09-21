@@ -24,6 +24,10 @@ public interface StudentService {
 
     boolean isSeatAvailable(String seatNo);
 
+    Student changeSeat(UUID studentId, String newSeatNo);
+
+    Student swapSeats(UUID studentId, String targetSeatNo);
+
     String getNextRegNo();
 
     Student updateProfileImage(UUID studentId, String imageUrl);

@@ -21,6 +21,8 @@ public interface StudentRepository
 
     boolean existsByLibrary_IdAndSeatNo(UUID libraryId, String seatNo);
 
+    Optional<Student> findByLibrary_IdAndSeatNo(UUID libraryId, String seatNo);
+
     boolean existsByLibrary_IdAndSeatNoAndIsEnrolledTrue(UUID libraryId, String seatNo);
 
     boolean existsByLibrary_IdAndRegNo(UUID libraryId, String regNo);

@@ -181,4 +181,39 @@ public class StudentServiceImpl implements StudentService {
         student.setProfileImageUrl(imageUrl);
         return studentRepository.save(student);
     }
+
+    @Override
+    public Student changeSeat(UUID studentId, String newSeatNo) {
+        UUID libraryId = LibraryContext.getLibraryId();
+        Student student = getById(studentId);
+
+        if (studentRepository.existsByLibrary_IdAndSeatNoAndIsEnrolledTrue(libraryId, newSeatNo)) {
+            throw new IllegalArgumentException("Seat " + newSeatNo + " is already occupied by an active student.");
+        }
+
+        student.setSeatNo(newSeatNo);
+        return studentRepository.save(student);
+    }
+
+    @Override
+    @Transactional
+    public Student swapSeats(UUID studentId, String targetSeatNo) {
+        UUID libraryId = LibraryContext.getLibraryId();
+        Student studentA = getById(studentId);
+
+        Student studentB = studentRepository.findByLibrary_IdAndSeatNo(libraryId, targetSeatNo)
+                .orElseThrow(() -> new IllegalArgumentException("No student found at seat " + targetSeatNo));
+
+        String originalSeatA = studentA.getSeatNo();
+        String originalSeatB = studentB.getSeatNo();
+
+        studentA.setSeatNo("TEMP-" + UUID.randomUUID().toString().substring(0, 8));
+        studentRepository.saveAndFlush(studentA);
+
+        studentB.setSeatNo(originalSeatA);
+        studentRepository.saveAndFlush(studentB);
+
+        studentA.setSeatNo(originalSeatB);
+        return studentRepository.saveAndFlush(studentA);
+    }
 }

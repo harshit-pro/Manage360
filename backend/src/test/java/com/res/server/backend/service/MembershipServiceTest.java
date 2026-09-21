@@ -64,7 +64,8 @@ class MembershipServiceTest {
                         1000,
                         PaymentMethod.CASH,
                         "Renewal",
-                        false
+                        false,
+                        0
                 );
 
         assertTrue(response.getActiveUntil().isAfter(before));
@@ -92,7 +93,8 @@ class MembershipServiceTest {
                         500,
                         PaymentMethod.UPI,
                         "Renewal after long lapse",
-                        false);
+                        false,
+                        0);
 
         assertTrue(
                 response.getActiveUntil().isAfter(LocalDate.now()),
