@@ -73,13 +73,6 @@ const baseSchema = z.object({
 
 const schema = baseSchema.superRefine((data, ctx) => {
     if (data.isEnrolled) {
-        if (!data.seatNo || data.seatNo.trim() === "") {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Seat No is required when marked active",
-                path: ["seatNo"]
-            });
-        }
         if (data.seasonalFees === undefined) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
